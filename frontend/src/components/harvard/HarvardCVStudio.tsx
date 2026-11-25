@@ -32,6 +32,7 @@ export function HarvardCVStudio({
   const [genHeadline, setGenHeadline] = useState<string>("");
   const [genNotes, setGenNotes] = useState<string>("");
   const [copied, setCopied] = useState<boolean>(false);
+  const [viewMode, setViewMode] = useState<"paper" | "markdown">("paper");
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,21 +51,89 @@ export function HarvardCVStudio({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // Renderizador visual limpio del Markdown Harvard sobre hoja de papel
+  const renderHarvardPaper = (md: string) => {
+    const lines = md.split("\n");
+    return lines.map((line, index) => {
+      const trimmed = line.trim();
+      if (!trimmed) return <div key={index} className="h-2" />;
+      if (trimmed === "---") {
+        return <hr key={index} className="border-zinc-300 my-3" />;
+      }
+      if (trimmed.startsWith("# ")) {
+        return (
+          <h1
+            key={index}
+            className="text-xl font-bold tracking-tight text-zinc-900 text-center"
+          >
+            {trimmed.replace(/^#\s+/, "")}
+          </h1>
+        );
+      }
+      if (trimmed.startsWith("## ")) {
+        return (
+          <h2
+            key={index}
+            className="text-xs font-bold uppercase tracking-widest text-zinc-900 border-b border-zinc-400 pb-1 mt-4 mb-2"
+          >
+            {trimmed.replace(/^##\s+/, "")}
+          </h2>
+        );
+      }
+      if (trimmed.startsWith("### ")) {
+        const cleanHeading = trimmed
+          .replace(/^###\s+/, "")
+          .replace(/\*\*/g, "")
+          .replace(/\*/g, "");
+        return (
+          <h3 key={index} className="text-xs font-bold text-zinc-900 mt-2.5">
+            {cleanHeading}
+          </h3>
+        );
+      }
+      if (trimmed.startsWith("- ")) {
+        const cleanBullet = trimmed.replace(/^-\s+/, "").replace(/\*\*/g, "");
+        return (
+          <div key={index} className="flex items-start gap-2 text-xs text-zinc-800 pl-2 leading-relaxed">
+            <span aria-hidden="true" className="text-zinc-500 select-none">
+              •
+            </span>
+            <span>{cleanBullet}</span>
+          </div>
+        );
+      }
+      const cleanParagraph = trimmed.replace(/\*\*/g, "");
+      return (
+        <p
+          key={index}
+          className={`text-xs text-zinc-700 leading-relaxed ${
+            index <= 2 ? "text-center" : ""
+          }`}
+        >
+          {cleanParagraph}
+        </p>
+      );
+    });
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      <div className="lg:col-span-4 space-y-4">
+      <div className="lg:col-span-4 space-y-5">
         <form
           onSubmit={handleFormSubmit}
           aria-labelledby="harvard-generator-heading"
-          className="p-5 rounded-2xl border border-slate-800 bg-slate-900/70 space-y-3"
+          className="p-5 rounded-xl border border-zinc-800/90 bg-zinc-900/40 space-y-3.5"
         >
-          <h2 id="harvard-generator-heading" className="text-base font-bold text-white">
-            Generador Dinámico Formato Harvard
+          <h2
+            id="harvard-generator-heading"
+            className="text-sm font-semibold tracking-tight text-zinc-100"
+          >
+            Compilador Formato Harvard
           </h2>
 
           <div>
-            <label htmlFor="harvard-cv-name" className="block text-xs text-slate-300 mb-1">
-              Nombre de la versión de CV
+            <label htmlFor="harvard-cv-name" className="block text-xs text-zinc-300 mb-1">
+              Nombre del documento
             </label>
             <input
               id="harvard-cv-name"
@@ -73,13 +142,13 @@ export function HarvardCVStudio({
               required
               value={genName}
               onChange={(e) => setGenName(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white"
+              className="w-full px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-xs text-zinc-100"
             />
           </div>
 
           <div>
-            <label htmlFor="harvard-cv-domain" className="block text-xs text-slate-300 mb-1">
-              Perfil Laboral Objetivo (elige uno o escribe cualquier perfil nuevo)
+            <label htmlFor="harvard-cv-domain" className="block text-xs text-zinc-300 mb-1">
+              Perfil laboral objetivo
             </label>
             <input
               id="harvard-cv-domain"
@@ -87,16 +156,14 @@ export function HarvardCVStudio({
               list="harvard-profiles-datalist"
               value={genDomain}
               onChange={(e) => setGenDomain(e.target.value)}
-              placeholder="Ej: hybrid, data-science, finanzas..."
-              className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white"
+              placeholder="hybrid, ti-fullstack, data-science..."
+              className="w-full px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-xs text-zinc-100"
             />
             <datalist id="harvard-profiles-datalist">
-              <option value="hybrid">
-                Perfil Híbrido Completo (Incluir toda la Bóveda)
-              </option>
+              <option value="hybrid">Perfil Híbrido Completo</option>
               {careerProfiles.map((p) => (
                 <option key={p.slug} value={p.slug}>
-                  {p.name} — {p.headline}
+                  {p.name}
                 </option>
               ))}
             </datalist>
@@ -105,9 +172,9 @@ export function HarvardCVStudio({
           <div>
             <label
               htmlFor="harvard-cv-headline"
-              className="block text-xs text-slate-300 mb-1"
+              className="block text-xs text-zinc-300 mb-1"
             >
-              Titular personalizado o Cargo de la Oferta (opcional)
+              Titular personalizado (opcional)
             </label>
             <input
               id="harvard-cv-headline"
@@ -115,14 +182,14 @@ export function HarvardCVStudio({
               type="text"
               value={genHeadline}
               onChange={(e) => setGenHeadline(e.target.value)}
-              placeholder="Ej: Senior Backend Engineer / Product Manager..."
-              className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white"
+              placeholder="Ej: Senior Full-Stack Engineer"
+              className="w-full px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-xs text-zinc-100"
             />
           </div>
 
           <div>
-            <label htmlFor="harvard-cv-notes" className="block text-xs text-slate-300 mb-1">
-              Notas de enfoque o requisitos de la oferta laboral
+            <label htmlFor="harvard-cv-notes" className="block text-xs text-zinc-300 mb-1">
+              Enfoque o requisitos de oferta
             </label>
             <textarea
               id="harvard-cv-notes"
@@ -130,29 +197,30 @@ export function HarvardCVStudio({
               rows={3}
               value={genNotes}
               onChange={(e) => setGenNotes(e.target.value)}
-              placeholder="Pega requisitos clave de la oferta o instrucciones para adaptar el Resumen Ejecutivo..."
-              className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white"
+              placeholder="Instrucciones para adaptar el Resumen Profesional..."
+              className="w-full p-2.5 rounded-lg bg-zinc-950 border border-zinc-800 text-xs text-zinc-100"
             />
           </div>
 
           <button
             type="submit"
             disabled={generatingCV}
-            className="w-full py-2.5 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs hover:bg-emerald-400 transition disabled:opacity-50"
+            className="w-full py-2.5 rounded-lg bg-zinc-100 text-zinc-950 font-semibold text-xs hover:bg-white transition-colors disabled:opacity-50"
           >
-            {generatingCV ? "Compilando Formato Harvard..." : "Compilar Nuevo CV Harvard"}
+            {generatingCV ? "Compilando..." : "Compilar Nuevo CV Harvard"}
           </button>
         </form>
 
-        <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/70 space-y-3">
-          <h3 className="text-sm font-bold text-white">Versiones Guardadas en /storage</h3>
+        <section className="p-5 rounded-xl border border-zinc-800/90 bg-zinc-900/40 space-y-3">
+          <h3 className="text-sm font-semibold text-zinc-100">
+            Documentos en Disco ({cvVariants.length})
+          </h3>
           {cvVariants.length === 0 ? (
-            <p className="text-xs text-slate-400">
-              Aún no has generado ninguna variante de CV. Usa el botón de arriba o ingesta
-              texto en tu Bóveda.
+            <p className="text-xs text-zinc-500">
+              No hay variantes generadas todavía.
             </p>
           ) : (
-            <ul role="list" className="space-y-2">
+            <ul role="list" className="space-y-1.5">
               {cvVariants.map((cv) => {
                 const isCurrent = selectedCV?.id === cv.id;
                 return (
@@ -161,21 +229,22 @@ export function HarvardCVStudio({
                       type="button"
                       aria-pressed={isCurrent}
                       onClick={() => onSelectCV(cv)}
-                      className={`w-full p-3 rounded-xl border text-left transition ${
+                      className={`w-full p-3 rounded-lg border text-left transition-colors ${
                         isCurrent
-                          ? "border-emerald-500 bg-emerald-500/10"
-                          : "border-slate-800 bg-slate-950/60 hover:border-slate-700"
+                          ? "border-zinc-400 bg-zinc-900"
+                          : "border-zinc-800/80 bg-zinc-950/60 hover:border-zinc-700"
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-bold text-xs text-white">{cv.name}</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
-                          ATS Base: {cv.last_ats_score || 94}/100
+                        <span className="font-medium text-xs text-zinc-100 truncate">
+                          {cv.name}
+                        </span>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 shrink-0">
+                          {cv.last_ats_score || 94}/100
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-400 mt-1">
-                        Perfil: {cv.target_domain} •{" "}
-                        {new Date(cv.created_at).toLocaleString()}
+                      <p className="text-[11px] text-zinc-500 mt-1 font-mono">
+                        {cv.target_domain}
                       </p>
                     </button>
                   </li>
@@ -183,37 +252,71 @@ export function HarvardCVStudio({
               })}
             </ul>
           )}
-        </div>
+        </section>
       </div>
 
+      {/* Preview derecho: Hoja Harvard de Papel vs Fuente Markdown */}
       <div className="lg:col-span-8">
-        <div className="p-6 rounded-2xl border border-slate-800 bg-slate-900/70 space-y-4">
+        <div className="p-5 rounded-xl border border-zinc-800/90 bg-zinc-900/40 space-y-4">
           {selectedCV ? (
             <>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3.5">
                 <div>
-                  <h2 className="text-base font-bold text-white">{selectedCV.name}</h2>
-                  <p className="text-xs text-slate-400">
-                    Guardado en disco:{" "}
-                    <code className="text-emerald-300">{selectedCV.file_path}</code>
+                  <h2 className="text-sm font-semibold text-zinc-100">
+                    {selectedCV.name}
+                  </h2>
+                  <p className="text-[11px] text-zinc-500 font-mono truncate max-w-md">
+                    {selectedCV.file_path}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleCopyMarkdown}
-                  className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-emerald-300 font-medium"
-                >
-                  {copied ? "¡Copiado al portapapeles!" : "Copiar Markdown Harvard"}
-                </button>
+                <div className="flex items-center gap-2">
+                  <div className="inline-flex rounded-lg border border-zinc-800 bg-zinc-950 p-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("paper")}
+                      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                        viewMode === "paper"
+                          ? "bg-zinc-800 text-zinc-100"
+                          : "text-zinc-400 hover:text-zinc-200"
+                      }`}
+                    >
+                      Vista Documento
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("markdown")}
+                      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                        viewMode === "markdown"
+                          ? "bg-zinc-800 text-zinc-100"
+                          : "text-zinc-400 hover:text-zinc-200"
+                      }`}
+                    >
+                      Markdown Crudo
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCopyMarkdown}
+                    className="px-3 py-1.5 rounded-lg border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-xs text-zinc-200 font-medium transition-colors"
+                  >
+                    {copied ? "Copiado" : "Copiar MD"}
+                  </button>
+                </div>
               </div>
-              <pre className="whitespace-pre-wrap text-sm text-slate-100 font-sans leading-relaxed bg-slate-950 p-6 rounded-xl border border-slate-800/90 overflow-x-auto">
-                {selectedCV.markdown_content}
-              </pre>
+
+              {viewMode === "paper" ? (
+                <div className="bg-[#fcfcfb] text-zinc-900 rounded-lg shadow-2xl border border-zinc-300 p-8 sm:p-10 max-w-3xl mx-auto font-serif space-y-1">
+                  {renderHarvardPaper(selectedCV.markdown_content)}
+                </div>
+              ) : (
+                <pre className="whitespace-pre-wrap text-xs text-zinc-200 font-mono leading-relaxed bg-zinc-950 p-5 rounded-lg border border-zinc-800 overflow-x-auto">
+                  {selectedCV.markdown_content}
+                </pre>
+              )}
             </>
           ) : (
-            <div className="p-12 text-center text-slate-400 text-sm">
-              Selecciona o genera una variante de CV en Formato Harvard para previsualizarla
-              aquí.
+            <div className="py-20 text-center text-zinc-500 text-xs">
+              Selecciona o compila un documento en Formato Harvard para previsualizarlo.
             </div>
           )}
         </div>

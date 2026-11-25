@@ -2,49 +2,56 @@ import type { CareerProfile, ProfileColorTheme } from "@/types/studio";
 
 export const THEME_STYLES: Record<
   ProfileColorTheme,
-  { badge: string; card: string; text: string }
+  { badge: string; card: string; text: string; dot: string }
 > = {
   cyan: {
-    badge: "bg-cyan-500/15 text-cyan-300 border-cyan-500/30",
-    card: "border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20",
-    text: "text-cyan-300",
+    badge: "bg-zinc-900 text-zinc-200 border-zinc-700",
+    card: "border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 hover:bg-zinc-900",
+    text: "text-zinc-100",
+    dot: "bg-cyan-400",
   },
   amber: {
-    badge: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-    card: "border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20",
-    text: "text-amber-300",
+    badge: "bg-zinc-900 text-zinc-200 border-zinc-700",
+    card: "border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 hover:bg-zinc-900",
+    text: "text-zinc-100",
+    dot: "bg-amber-400",
   },
   purple: {
-    badge: "bg-purple-500/15 text-purple-300 border-purple-500/30",
-    card: "border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20",
-    text: "text-purple-300",
+    badge: "bg-zinc-900 text-zinc-200 border-zinc-700",
+    card: "border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 hover:bg-zinc-900",
+    text: "text-zinc-100",
+    dot: "bg-purple-400",
   },
   emerald: {
-    badge: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
-    card: "border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20",
-    text: "text-emerald-300",
+    badge: "bg-zinc-900 text-zinc-200 border-zinc-700",
+    card: "border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 hover:bg-zinc-900",
+    text: "text-zinc-100",
+    dot: "bg-emerald-400",
   },
   rose: {
-    badge: "bg-rose-500/15 text-rose-300 border-rose-500/30",
-    card: "border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20",
-    text: "text-rose-300",
+    badge: "bg-zinc-900 text-zinc-200 border-zinc-700",
+    card: "border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 hover:bg-zinc-900",
+    text: "text-zinc-100",
+    dot: "bg-rose-400",
   },
   sky: {
-    badge: "bg-sky-500/15 text-sky-300 border-sky-500/30",
-    card: "border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20",
-    text: "text-sky-300",
+    badge: "bg-zinc-900 text-zinc-200 border-zinc-700",
+    card: "border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 hover:bg-zinc-900",
+    text: "text-zinc-100",
+    dot: "bg-sky-400",
   },
   indigo: {
-    badge: "bg-indigo-500/15 text-indigo-300 border-indigo-500/30",
-    card: "border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20",
-    text: "text-indigo-300",
+    badge: "bg-zinc-900 text-zinc-200 border-zinc-700",
+    card: "border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 hover:bg-zinc-900",
+    text: "text-zinc-100",
+    dot: "bg-indigo-400",
   },
 };
 
 export function resolveTagBadge(
   tag: string,
   careerProfiles: CareerProfile[]
-): { label: string; color: string } {
+): { label: string; color: string; dotColor: string } {
   const matched = careerProfiles.find(
     (p) => p.slug === tag || p.include_tags?.includes(tag)
   );
@@ -53,17 +60,13 @@ export function resolveTagBadge(
     return {
       label: matched.slug === tag ? matched.name : tag,
       color: theme.badge,
-    };
-  }
-  if (tag === "transversal") {
-    return {
-      label: "Transversal",
-      color: THEME_STYLES.emerald.badge,
+      dotColor: theme.dot,
     };
   }
   return {
     label: tag,
-    color: "bg-slate-800 text-slate-300 border-slate-700",
+    color: "bg-zinc-900 text-zinc-300 border-zinc-800",
+    dotColor: "bg-zinc-500",
   };
 }
 

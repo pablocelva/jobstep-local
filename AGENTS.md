@@ -99,6 +99,13 @@ jobstep-local/
     - Rutas nativas: `app/page.tsx` (`/` Mi Bóveda), `app/harvard-cvs/page.tsx` (`/harvard-cvs`), `app/best-practices/page.tsx` (`/best-practices`) y `app/settings/page.tsx` (`/settings`).
     - `types/studio.ts`, `constants/domains.ts` y `lib/api.ts`: Tipado estricto TypeScript y capa de cliente HTTP desacoplada.
     - Componentes por dominio (`components/layout/`, `components/vault/`, `components/harvard/`, `components/guide/`, `components/settings/`) construidos siguiendo las guías `navbar`, `forms` y `accessibility` de `modern-web-guidance`.
-- **[Pendiente] Fase 3 - Motor Evaluador ATS Core (Parser PDF/DOCX + Heurísticas + Keyword Matcher).**
+- **[Completado] Fase 3 - Motor Evaluador ATS Core (Parser PDF/DOCX + Heurísticas + Keyword Matcher):**
+  - Calculador determinista y explicable del **ATS Score (0-100)** (`backend/app/services/ats/evaluator.py`):
+    - **25% Parseabilidad & Geometría ATS:** Validación Regex de Email, Teléfono, LinkedIn, GitHub/Portafolio y penalización por diseño multi-columna o tablas detectadas con `PyMuPDF 2.1` / `python-docx`.
+    - **20% Estructura Formato Harvard:** Detección bilingüe (ES/EN) de secciones estándar y densidad óptima de palabras.
+    - **25% Impacto de Viñetas (Método Google XYZ / STAR):** Diccionario bilingüe de verbos de acción fuertes, penalización de frases pasivas y detección de cuantificación numérica (`%`, `$`, volúmenes, tiempos).
+    - **30% Match con Oferta Laboral & Recomendación de Perfil Dinámico:** Extracción de *Hard/Soft Skills* de la oferta (vía `LLMService` con respaldo heurístico), listado de keywords encontradas vs. faltantes y recomendación del `CareerProfile` más compatible.
+  - Endpoints REST (`backend/app/api/routes_ats.py`): `POST /api/ats/evaluate` y `POST /api/ats/evaluate-file`.
+  - Ruta nativa en Next.js (`frontend/src/app/ats-evaluator/page.tsx` + `components/ats/ATSEvaluatorStudio.tsx`): Velocímetro ATS 0-100, barras `<progress>` de los 4 pilares, chips de keywords presentes/faltantes y auditoría viñeta por viñeta.
 - **[Pendiente] Fase 4 - Gestor de Ofertas Laborales y Sincronización en Carpetas Locales (`.md` + CVs).**
 - **[Pendiente] Fase 5 - Copiloto de Reescritura Viñeta por Viñeta y Exportador PDF ATS-Friendly.**

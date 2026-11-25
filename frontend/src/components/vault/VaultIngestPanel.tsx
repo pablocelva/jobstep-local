@@ -30,7 +30,6 @@ export function VaultIngestPanel({
   const [ingestFeedback, setIngestFeedback] = useState<string>("");
   const [hasError, setHasError] = useState<boolean>(false);
 
-  // Estado para inscribir un nuevo Perfil Laboral personalizado
   const [showNewProfileForm, setShowNewProfileForm] = useState<boolean>(false);
   const [newProfileName, setNewProfileName] = useState<string>("");
   const [newProfileHeadline, setNewProfileHeadline] = useState<string>("");
@@ -43,15 +42,13 @@ export function VaultIngestPanel({
     if (freeText.trim().length < 20) {
       setHasError(true);
       setIngestFeedback(
-        "Escribe al menos 20 caracteres con tus experiencias o usa el botón de ejemplo."
+        "Ingresa al menos 20 caracteres con tus experiencias o carga la plantilla de ejemplo."
       );
       return;
     }
     setHasError(false);
     setIngestingText(true);
-    setIngestFeedback(
-      "Estructurando experiencias al Formato Harvard y descubriendo perfiles laborales..."
-    );
+    setIngestFeedback("Estructurando experiencias al estándar Harvard (Google XYZ)...");
     try {
       const hint = ingestDomainHint.trim() || "hybrid";
       const data = await ingestFreeTextRequest({
@@ -61,7 +58,7 @@ export function VaultIngestPanel({
         cv_name: `CV Harvard (${hint})`,
       });
       setIngestFeedback(
-        `¡Listo! Se estructuraron ${data.items_created} bloques en tu Bóveda Maestra (${data.provider_used}) y se generó un CV en Formato Harvard.`
+        `Se estructuraron ${data.items_created} registros en la Bóveda (${data.provider_used}) y se compiló el CV Harvard.`
       );
       setFreeText("");
       await onDataChanged();
@@ -78,15 +75,15 @@ export function VaultIngestPanel({
     if (!file) return;
     setHasError(false);
     setUploadingFile(true);
-    setIngestFeedback(`Extrayendo y auditando ${file.name} con PyMuPDF / python-docx...`);
+    setIngestFeedback(`Procesando ${file.name} con PyMuPDF / python-docx...`);
     try {
       const hint = ingestDomainHint.trim() || "hybrid";
       const data = await ingestFileRequest(file, hint);
       const multiColWarn = data.document_metadata?.suspected_multi_column
-        ? " (Aviso ATS: Se detectó diseño multi-columna en el PDF original; fue convertido a Formato Harvard de 1 columna)."
+        ? " (Se detectó diseño multi-columna en el PDF original; fue normalizado a 1 columna)."
         : "";
       setIngestFeedback(
-        `Archivo '${data.filename}' importado (${data.items_created} ítems extraídos a la Bóveda).${multiColWarn}`
+        `Archivo '${data.filename}' importado (${data.items_created} ítems extraídos).${multiColWarn}`
       );
       await onDataChanged();
     } catch (err) {
@@ -129,43 +126,44 @@ export function VaultIngestPanel({
   };
 
   return (
-    <div className="space-y-5">
-      <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/70 space-y-4">
+    <div className="space-y-6">
+      {/* Card 1: Ingesta */}
+      <section className="p-5 rounded-xl border border-zinc-800/90 bg-zinc-900/40 space-y-4">
         <div className="flex items-center justify-between gap-2">
-          <h2 id="ingest-form-heading" className="text-base font-bold text-white">
-            1. Alimentar Bóveda (Cualquier Profesión o Rubro)
-          </h2>
+          <div>
+            <h2
+              id="ingest-form-heading"
+              className="text-sm font-semibold tracking-tight text-zinc-100"
+            >
+              Ingesta de Experiencia
+            </h2>
+            <p id="ingest-helper-desc" className="text-xs text-zinc-400 mt-0.5">
+              Texto libre o documento existente hacia Formato Harvard (Google XYZ).
+            </p>
+          </div>
           <button
             type="button"
             onClick={() => {
               setFreeText(SAMPLE_BRAIN_DUMP);
               setHasError(false);
             }}
-            className="text-xs text-emerald-300 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
+            className="text-xs font-medium text-zinc-300 hover:text-white underline underline-offset-4"
           >
-            Cargar ejemplo multi-perfil
+            Cargar ejemplo
           </button>
         </div>
-
-        <p id="ingest-helper-desc" className="text-xs text-slate-400 leading-relaxed">
-          Escribe o pega en bruto tus experiencias de <strong>cualquier industria o rol</strong>{" "}
-          (Finanzas, Salud, Marketing, Ingeniería, TI, Atención al Cliente, Audio/Video, etc.).
-          La IA estructurará tus logros bajo el{" "}
-          <strong className="text-emerald-300">Formato Harvard (Método Google XYZ)</strong> e
-          inscribirá automáticamente nuevos perfiles laborales si los detecta.
-        </p>
 
         <form
           aria-labelledby="ingest-form-heading"
           onSubmit={handleIngestFreeText}
-          className="space-y-3"
+          className="space-y-3.5"
         >
           <div>
             <label
               htmlFor="ingest-domain-hint"
-              className="block text-xs font-medium text-slate-300 mb-1"
+              className="block text-xs font-medium text-zinc-300 mb-1.5"
             >
-              Perfil laboral objetivo (elige uno existente o escribe cualquier perfil nuevo)
+              Perfil laboral objetivo
             </label>
             <input
               id="ingest-domain-hint"
@@ -173,12 +171,12 @@ export function VaultIngestPanel({
               list="career-profiles-datalist"
               value={ingestDomainHint}
               onChange={(e) => setIngestDomainHint(e.target.value)}
-              placeholder="Ej: hybrid, data-science, marketing-digital, finanzas..."
-              className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white focus-visible:outline-2 focus-visible:outline-emerald-400"
+              placeholder="hybrid, data-science, marketing-digital..."
+              className="w-full px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-800 text-xs text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors"
             />
             <datalist id="career-profiles-datalist">
               <option value="hybrid">
-                Auto-detectar e inscribir perfiles desde el texto (Multi-Perfil)
+                Auto-detectar e inscribir perfiles desde el texto
               </option>
               {careerProfiles.map((p) => (
                 <option key={p.slug} value={p.slug}>
@@ -191,15 +189,14 @@ export function VaultIngestPanel({
           <div>
             <label
               htmlFor="free-text-brain-dump"
-              className="block text-xs font-medium text-slate-300 mb-1"
+              className="block text-xs font-medium text-zinc-300 mb-1.5"
             >
-              Experiencias en texto libre o contenido de tu CV{" "}
-              <span className="text-slate-400">(mínimo 20 caracteres)</span>
+              Narrativa libre o texto de CV
             </label>
             <textarea
               id="free-text-brain-dump"
               name="raw_text"
-              rows={7}
+              rows={6}
               required
               minLength={20}
               aria-invalid={hasError ? "true" : undefined}
@@ -209,75 +206,79 @@ export function VaultIngestPanel({
                 setFreeText(e.target.value);
                 if (hasError) setHasError(false);
               }}
-              placeholder="Cuenta en prosa libre dónde has trabajado, tus logros, herramientas y formación de cualquier área profesional..."
-              className="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-100 focus-visible:outline-2 focus-visible:outline-emerald-500 leading-relaxed"
+              placeholder="Describe tus cargos, logros, métricas, tecnologías o proyectos en cualquier orden..."
+              className="w-full p-3 rounded-lg bg-zinc-950 border border-zinc-800 text-xs text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 leading-relaxed transition-colors"
             />
           </div>
 
           <button
             type="submit"
             disabled={ingestingText}
-            className="w-full py-2.5 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs hover:bg-emerald-400 transition disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
+            className="w-full py-2.5 px-4 rounded-lg bg-zinc-100 text-zinc-950 font-semibold text-xs hover:bg-white transition-colors disabled:opacity-50"
           >
             {ingestingText
-              ? "Estructurando a Formato Harvard e inscribiendo perfiles..."
-              : "Estructurar Texto Libre y Crear CV Harvard"}
+              ? "Estructurando registros..."
+              : "Estructurar Texto y Compilar CV Harvard"}
           </button>
         </form>
 
-        {/* Subida de archivo PDF / DOCX / MD */}
-        <div className="pt-3 border-t border-slate-800/80 space-y-2">
+        <div className="pt-3.5 border-t border-zinc-800/80 flex items-center justify-between gap-3">
           <label
             htmlFor="cv-file-upload"
-            className="block text-xs font-semibold text-slate-300"
+            className="text-xs text-zinc-400"
           >
-            O sube un CV existente (PDF, DOCX, MD, TXT — máx 10 MB)
+            O importar archivo (PDF, DOCX, MD)
           </label>
-          <input
-            id="cv-file-upload"
-            name="cv_file"
-            type="file"
-            accept=".pdf,.docx,.md,.txt"
-            onChange={handleFileUpload}
-            disabled={uploadingFile}
-            className="block w-full text-xs text-slate-300 file:mr-3 file:py-2 file:px-3.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-emerald-300 hover:file:bg-slate-700 cursor-pointer"
-          />
+          <label
+            htmlFor="cv-file-upload"
+            className="px-3 py-1.5 rounded-lg border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-xs font-medium text-zinc-200 cursor-pointer transition-colors shrink-0"
+          >
+            {uploadingFile ? "Procesando..." : "Subir archivo"}
+            <input
+              id="cv-file-upload"
+              name="cv_file"
+              type="file"
+              accept=".pdf,.docx,.md,.txt"
+              onChange={handleFileUpload}
+              disabled={uploadingFile}
+              className="sr-only"
+            />
+          </label>
         </div>
 
         {ingestFeedback && (
           <div
             role={hasError ? "alert" : "status"}
             aria-live="polite"
-            className={`p-3 rounded-xl border text-xs ${
+            className={`p-3 rounded-lg border text-xs ${
               hasError
-                ? "border-rose-500/40 bg-rose-500/10 text-rose-200"
-                : "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
+                ? "border-rose-500/40 bg-rose-950/30 text-rose-200"
+                : "border-zinc-700 bg-zinc-900 text-zinc-200"
             }`}
           >
             {ingestFeedback}
           </div>
         )}
-      </div>
+      </section>
 
-      {/* Gestor Dinámico de Perfiles Laborales + Compilación 1 Clic */}
-      <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/70 space-y-3">
+      {/* Card 2: Perfiles Laborales */}
+      <section className="p-5 rounded-xl border border-zinc-800/90 bg-zinc-900/40 space-y-3.5">
         <div className="flex items-center justify-between gap-2">
           <div>
-            <h3 className="text-sm font-bold text-white">
-              2. Perfiles Laborales Inscritos ({careerProfiles.length})
+            <h3 className="text-sm font-semibold tracking-tight text-zinc-100">
+              Perfiles Laborales ({careerProfiles.length})
             </h3>
-            <p className="text-xs text-slate-400">
-              Inscribe cualquier perfil laboral nuevo o haz clic en uno para compilar su CV
-              Harvard:
+            <p className="text-xs text-zinc-400 mt-0.5">
+              Haz clic en un perfil para compilar su CV Harvard filtrado.
             </p>
           </div>
           <button
             type="button"
             aria-expanded={showNewProfileForm}
             onClick={() => setShowNewProfileForm(!showNewProfileForm)}
-            className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-emerald-300 border border-slate-700 shrink-0"
+            className="px-2.5 py-1.5 rounded-md border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-xs font-medium text-zinc-200 transition-colors shrink-0"
           >
-            {showNewProfileForm ? "Cancelar" : "+ Inscribir Perfil"}
+            {showNewProfileForm ? "Cerrar" : "+ Nuevo Perfil"}
           </button>
         </div>
 
@@ -285,11 +286,11 @@ export function VaultIngestPanel({
           <form
             aria-label="Inscribir nuevo perfil laboral"
             onSubmit={handleCreateProfile}
-            className="p-3.5 rounded-xl border border-slate-700 bg-slate-950/90 space-y-2.5"
+            className="p-3.5 rounded-lg border border-zinc-800 bg-zinc-950 space-y-2.5"
           >
             <div>
-              <label htmlFor="new-prof-name" className="block text-xs text-slate-300 mb-1">
-                Nombre del Perfil Laboral <span aria-hidden="true">*</span>
+              <label htmlFor="new-prof-name" className="block text-xs text-zinc-300 mb-1">
+                Nombre del perfil <span aria-hidden="true">*</span>
               </label>
               <input
                 id="new-prof-name"
@@ -297,55 +298,55 @@ export function VaultIngestPanel({
                 required
                 value={newProfileName}
                 onChange={(e) => setNewProfileName(e.target.value)}
-                placeholder="Ej: Analista de Datos & BI / Marketing Digital / Finanzas"
-                className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                placeholder="Ej: Data Science & BI / Finanzas / Diseño UX"
+                className="w-full px-2.5 py-1.5 rounded-md bg-zinc-900 border border-zinc-800 text-xs text-zinc-100"
               />
             </div>
 
             <div>
-              <label htmlFor="new-prof-headline" className="block text-xs text-slate-300 mb-1">
-                Titular para el encabezado del CV Harvard
+              <label htmlFor="new-prof-headline" className="block text-xs text-zinc-300 mb-1">
+                Titular para encabezado Harvard
               </label>
               <input
                 id="new-prof-headline"
                 type="text"
                 value={newProfileHeadline}
                 onChange={(e) => setNewProfileHeadline(e.target.value)}
-                placeholder="Ej: Data Analyst especializado en SQL, Python y Power BI"
-                className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                placeholder="Ej: Data Analyst especializado en SQL y Python"
+                className="w-full px-2.5 py-1.5 rounded-md bg-zinc-900 border border-zinc-800 text-xs text-zinc-100"
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <div>
-                <label htmlFor="new-prof-desc" className="block text-xs text-slate-300 mb-1">
-                  Descripción corta (opcional)
+                <label htmlFor="new-prof-desc" className="block text-xs text-zinc-300 mb-1">
+                  Descripción
                 </label>
                 <input
                   id="new-prof-desc"
                   type="text"
                   value={newProfileDesc}
                   onChange={(e) => setNewProfileDesc(e.target.value)}
-                  placeholder="Enfoque u ofertas objetivo..."
-                  className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                  placeholder="Opcional..."
+                  className="w-full px-2.5 py-1.5 rounded-md bg-zinc-900 border border-zinc-800 text-xs text-zinc-100"
                 />
               </div>
               <div>
-                <label htmlFor="new-prof-theme" className="block text-xs text-slate-300 mb-1">
-                  Color identificador
+                <label htmlFor="new-prof-theme" className="block text-xs text-zinc-300 mb-1">
+                  Indicador
                 </label>
                 <select
                   id="new-prof-theme"
                   value={newProfileTheme}
                   onChange={(e) => setNewProfileTheme(e.target.value as ProfileColorTheme)}
-                  className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                  className="w-full px-2.5 py-1.5 rounded-md bg-zinc-900 border border-zinc-800 text-xs text-zinc-100"
                 >
                   <option value="emerald">Esmeralda</option>
                   <option value="cyan">Cian</option>
                   <option value="amber">Ámbar</option>
                   <option value="purple">Púrpura</option>
                   <option value="rose">Rosa</option>
-                  <option value="sky">Azul Cielo</option>
+                  <option value="sky">Azul</option>
                   <option value="indigo">Índigo</option>
                 </select>
               </div>
@@ -354,20 +355,20 @@ export function VaultIngestPanel({
             <button
               type="submit"
               disabled={creatingProfile}
-              className="w-full py-2 rounded-lg bg-emerald-500 text-slate-950 font-bold text-xs hover:bg-emerald-400 transition"
+              className="w-full py-2 rounded-md bg-zinc-100 text-zinc-950 font-semibold text-xs hover:bg-white transition-colors"
             >
-              {creatingProfile ? "Inscribiendo..." : "Guardar Nuevo Perfil Laboral"}
+              {creatingProfile ? "Guardando..." : "Inscribir Perfil"}
             </button>
           </form>
         )}
 
-        <ul role="list" className="grid grid-cols-1 gap-2">
+        <ul role="list" className="divide-y divide-zinc-800/70 border border-zinc-800/80 rounded-lg overflow-hidden bg-zinc-950/60">
           {careerProfiles.map((prof) => {
             const style = THEME_STYLES[prof.color_theme] || THEME_STYLES.emerald;
             return (
               <li
                 key={prof.id}
-                className={`rounded-xl border transition flex items-center justify-between px-3.5 py-2.5 ${style.card}`}
+                className="flex items-center justify-between px-3.5 py-2.5 hover:bg-zinc-900/80 transition-colors"
               >
                 <button
                   type="button"
@@ -375,12 +376,18 @@ export function VaultIngestPanel({
                     onQuickCompileHarvard(prof.slug, `CV Harvard — ${prof.name}`)
                   }
                   disabled={generatingCV}
-                  className="flex-1 text-left focus-visible:outline-2 focus-visible:outline-emerald-400"
+                  className="flex-1 text-left group"
                 >
-                  <p className={`text-xs font-bold ${style.text}`}>
-                    Compilar CV: {prof.name}
-                  </p>
-                  <p className="text-[11px] text-slate-300/90">
+                  <div className="flex items-center gap-2">
+                    <span
+                      aria-hidden="true"
+                      className={`h-2 w-2 rounded-full ${style.dot}`}
+                    />
+                    <span className="text-xs font-medium text-zinc-100 group-hover:text-white">
+                      {prof.name}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-zinc-400 pl-4 mt-0.5 line-clamp-1">
                     {prof.description || prof.headline}
                   </p>
                 </button>
@@ -388,7 +395,7 @@ export function VaultIngestPanel({
                   type="button"
                   aria-label={`Eliminar perfil ${prof.name}`}
                   onClick={() => handleDeleteProfile(prof.id)}
-                  className="ml-2 px-2 py-1 text-xs text-slate-400 hover:text-rose-300 rounded"
+                  className="ml-2 px-2 py-1 text-xs text-zinc-500 hover:text-zinc-200 rounded"
                 >
                   ✕
                 </button>
@@ -396,7 +403,7 @@ export function VaultIngestPanel({
             );
           })}
         </ul>
-      </div>
+      </section>
     </div>
   );
 }

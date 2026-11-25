@@ -97,6 +97,13 @@ backend/
 | `POST` | `/api/profile/cv-variants/generate-harvard` | Compila bajo demanda un CV en Formato Harvard filtrando la Boveda por perfil (`ti-fullstack`, `customer-service`, `creative-media`, `hybrid`). |
 | `DELETE` | `/api/profile/cv-variants/{variant_id}` | Elimina una variante de CV registrada. |
 
+### 3.3 Motor Evaluador ATS Core (`/api/ats`)
+
+| Metodo | Ruta | Descripcion |
+| :--- | :--- | :--- |
+| `POST` | `/api/ats/evaluate` | Evalua un CV (`cv_variant_id` o `cv_text`) contra los 4 pilares deterministas ATS y una oferta laboral opcional (`job_description`). |
+| `POST` | `/api/ats/evaluate-file` | Audita geometricamente un archivo `PDF`, `DOCX`, `MD` o `TXT` (columnas, tablas, contacto, vinetas XYZ) y calcula el Score ATS 0-100. |
+
 ---
 
 ## 4. Comandos de Desarrollo Local

@@ -76,3 +76,64 @@ export interface CVVariant {
   last_ats_score: number | null;
   created_at: string;
 }
+
+export interface BulletAuditItem {
+  text: string;
+  starts_with_action_verb: boolean;
+  detected_verb: string | null;
+  has_weak_phrase: boolean;
+  has_metrics: boolean;
+  word_count: number;
+  status: "strong" | "needs_metrics" | "weak_start" | "length_warning";
+  feedback: string;
+}
+
+export interface PillarBreakdown {
+  score: number;
+  weight_percent: number;
+  weighted_points: number;
+  checks_passed: string[];
+  issues: string[];
+}
+
+export interface KeywordMatchSummary {
+  detected_role: string;
+  detected_domain_slug: string;
+  recommended_profile_slug: string;
+  recommended_profile_name: string;
+  required_keywords: string[];
+  matched_keywords: string[];
+  missing_keywords: string[];
+  match_percentage: number;
+}
+
+export interface ATSEvaluationResponse {
+  overall_score: number;
+  grade_label: string;
+  language_detected: string;
+  formula_explanation: string;
+  pillars: {
+    parseability: PillarBreakdown;
+    structure: PillarBreakdown;
+    impact: PillarBreakdown;
+    job_match: PillarBreakdown;
+  };
+  contact_checks: {
+    email: boolean;
+    phone: boolean;
+    linkedin: boolean;
+    portfolio_or_github: boolean;
+  };
+  sections_detected: string[];
+  sections_missing: string[];
+  bullet_audit: BulletAuditItem[];
+  bullet_stats: {
+    total_bullets: number;
+    action_verb_Ratio: number;
+    metrics_ratio: number;
+    weak_phrases_count: number;
+    optimal_length_ratio: number;
+  };
+  job_match: KeywordMatchSummary | null;
+  top_recommendations: string[];
+}

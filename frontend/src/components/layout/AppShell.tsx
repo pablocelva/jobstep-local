@@ -2,25 +2,23 @@
 
 import React from "react";
 import { Navbar } from "@/components/layout/Navbar";
-import { StatusBanner } from "@/components/layout/StatusBanner";
 import { StudioProvider, useStudio } from "@/context/StudioContext";
 
 function ShellContent({ children }: { children: React.ReactNode }) {
   const { apiOnline, settings, profileItems, cvVariants } = useStudio();
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar vaultCount={profileItems.length} cvCount={cvVariants.length} />
+    <div className="min-h-screen flex flex-col bg-[#09090b] text-zinc-100">
+      <Navbar
+        vaultCount={profileItems.length}
+        cvCount={cvVariants.length}
+        apiOnline={apiOnline}
+        settings={settings}
+      />
       <main
         id="main-content"
-        className="max-w-7xl mx-auto w-full px-6 py-8 flex-1 space-y-6"
+        className="max-w-7xl mx-auto w-full px-6 py-7 flex-1"
       >
-        <StatusBanner
-          apiOnline={apiOnline}
-          settings={settings}
-          vaultCount={profileItems.length}
-          cvCount={cvVariants.length}
-        />
         {children}
       </main>
     </div>

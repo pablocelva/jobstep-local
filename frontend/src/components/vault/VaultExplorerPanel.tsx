@@ -29,11 +29,8 @@ export function VaultExplorerPanel({
   const [manualBullets, setManualBullets] = useState<string>("");
   const [manualTechs, setManualTechs] = useState<string>("");
 
-  // Construye las pestañas de filtro combinando los Perfiles Laborales inscritos + cualquier etiqueta descubierta en los ítems
   const dynamicFilterTabs = useMemo(() => {
-    const tabs: { id: string; label: string }[] = [
-      { id: "all", label: "Todos los Perfiles" },
-    ];
+    const tabs: { id: string; label: string }[] = [{ id: "all", label: "Todos" }];
     const seen = new Set<string>(["all"]);
 
     for (const prof of careerProfiles) {
@@ -110,32 +107,29 @@ export function VaultExplorerPanel({
   };
 
   return (
-    <div className="p-5 rounded-2xl border border-slate-800 bg-slate-900/70 space-y-4">
+    <section className="p-5 rounded-xl border border-zinc-800/90 bg-zinc-900/40 space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-bold text-white">
-            Bóveda Profesional Maestra ({filteredItems.length} ítems)
+          <h2 className="text-sm font-semibold tracking-tight text-zinc-100">
+            Registros de la Bóveda ({filteredItems.length})
           </h2>
-          <p className="text-xs text-slate-400">
-            Respaldada automáticamente en{" "}
-            <code className="text-emerald-300">
-              storage/master_profile/master_knowledge_base.json
-            </code>
+          <p className="text-xs text-zinc-400 mt-0.5 font-mono">
+            storage/master_profile/master_knowledge_base.json
           </p>
         </div>
         <button
           type="button"
           aria-expanded={showManualForm}
           onClick={() => setShowManualForm(!showManualForm)}
-          className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-emerald-300 border border-slate-700 focus-visible:outline-2 focus-visible:outline-emerald-400"
+          className="px-3 py-1.5 rounded-md bg-zinc-900 hover:bg-zinc-800 text-xs font-medium text-zinc-200 border border-zinc-700 transition-colors"
         >
-          {showManualForm ? "Cerrar formulario" : "+ Agregar Ítem Manual"}
+          {showManualForm ? "Cerrar" : "+ Nuevo Registro"}
         </button>
       </div>
 
-      {/* Filtros dinámicos por Perfil Laboral envueltos en <search> */}
+      {/* Filtros limpios tipo pill */}
       <search aria-label="Filtrar ítems de la Bóveda por perfil laboral">
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1.5 pb-1">
           {dynamicFilterTabs.map((tab) => {
             const isPressed = domainFilter === tab.id;
             return (
@@ -144,10 +138,10 @@ export function VaultExplorerPanel({
                 type="button"
                 aria-pressed={isPressed}
                 onClick={() => setDomainFilter(tab.id)}
-                className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition focus-visible:outline-2 focus-visible:outline-emerald-400 ${
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                   isPressed
-                    ? "bg-emerald-500 text-slate-950 font-bold"
-                    : "bg-slate-950 text-slate-300 border border-slate-800 hover:border-slate-700"
+                    ? "bg-zinc-100 text-zinc-950 font-semibold"
+                    : "bg-zinc-950 text-zinc-400 border border-zinc-800 hover:text-zinc-200 hover:border-zinc-700"
                 }`}
               >
                 {tab.label}
@@ -157,24 +151,23 @@ export function VaultExplorerPanel({
         </div>
       </search>
 
-      {/* Formulario manual colapsable con soporte para elegir o escribir cualquier perfil */}
       {showManualForm && (
         <form
           aria-label="Agregar ítem manual a la Bóveda"
           onSubmit={handleManualAdd}
-          className="p-4 rounded-xl border border-slate-700 bg-slate-950/90 space-y-3"
+          className="p-4 rounded-lg border border-zinc-800 bg-zinc-950 space-y-3"
         >
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label htmlFor="manual-item-type" className="block text-xs text-slate-300 mb-1">
-                Tipo de Ítem
+              <label htmlFor="manual-item-type" className="block text-xs text-zinc-300 mb-1">
+                Categoría
               </label>
               <select
                 id="manual-item-type"
                 name="item_type"
                 value={manualType}
                 onChange={(e) => setManualType(e.target.value)}
-                className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                className="w-full px-2.5 py-1.5 rounded-md bg-zinc-900 border border-zinc-800 text-xs text-zinc-100"
               >
                 <option value="experience">Experiencia Laboral</option>
                 <option value="project">Proyecto</option>
@@ -185,8 +178,8 @@ export function VaultExplorerPanel({
             </div>
 
             <div>
-              <label htmlFor="manual-domain-tag" className="block text-xs text-slate-300 mb-1">
-                Perfil o Rubro (elige o escribe uno nuevo)
+              <label htmlFor="manual-domain-tag" className="block text-xs text-zinc-300 mb-1">
+                Perfil asociado
               </label>
               <input
                 id="manual-domain-tag"
@@ -194,8 +187,8 @@ export function VaultExplorerPanel({
                 list="manual-profiles-datalist"
                 value={manualDomain}
                 onChange={(e) => setManualDomain(e.target.value)}
-                placeholder="Ej: data-science, marketing..."
-                className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                placeholder="Ej: ti-fullstack..."
+                className="w-full px-2.5 py-1.5 rounded-md bg-zinc-900 border border-zinc-800 text-xs text-zinc-100"
               />
               <datalist id="manual-profiles-datalist">
                 {careerProfiles.map((p) => (
@@ -203,13 +196,13 @@ export function VaultExplorerPanel({
                     {p.name}
                   </option>
                 ))}
-                <option value="transversal">Transversal (Todos los perfiles)</option>
+                <option value="transversal">Transversal</option>
               </datalist>
             </div>
 
             <div>
-              <label htmlFor="manual-dates" className="block text-xs text-slate-300 mb-1">
-                Período / Fechas
+              <label htmlFor="manual-dates" className="block text-xs text-zinc-300 mb-1">
+                Período
               </label>
               <input
                 id="manual-dates"
@@ -217,16 +210,16 @@ export function VaultExplorerPanel({
                 type="text"
                 value={manualDates}
                 onChange={(e) => setManualDates(e.target.value)}
-                placeholder="Ej: 2023 - Actualidad"
-                className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                placeholder="2023 - Actualidad"
+                className="w-full px-2.5 py-1.5 rounded-md bg-zinc-900 border border-zinc-800 text-xs text-zinc-100"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label htmlFor="manual-title" className="block text-xs text-slate-300 mb-1">
-                Cargo / Título del Proyecto <span aria-hidden="true">*</span>
+              <label htmlFor="manual-title" className="block text-xs text-zinc-300 mb-1">
+                Cargo o Título <span aria-hidden="true">*</span>
               </label>
               <input
                 id="manual-title"
@@ -235,14 +228,14 @@ export function VaultExplorerPanel({
                 required
                 value={manualTitle}
                 onChange={(e) => setManualTitle(e.target.value)}
-                placeholder="Ej: Analista Financiero / Full-Stack Dev"
-                className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                placeholder="Ej: Full-Stack Developer"
+                className="w-full px-2.5 py-1.5 rounded-md bg-zinc-900 border border-zinc-800 text-xs text-zinc-100"
               />
             </div>
 
             <div>
-              <label htmlFor="manual-org" className="block text-xs text-slate-300 mb-1">
-                Empresa / Cliente / Institución
+              <label htmlFor="manual-org" className="block text-xs text-zinc-300 mb-1">
+                Organización / Cliente
               </label>
               <input
                 id="manual-org"
@@ -250,15 +243,15 @@ export function VaultExplorerPanel({
                 type="text"
                 value={manualOrg}
                 onChange={(e) => setManualOrg(e.target.value)}
-                placeholder="Ej: Empresa / Freelance"
-                className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                placeholder="Empresa / Freelance"
+                className="w-full px-2.5 py-1.5 rounded-md bg-zinc-900 border border-zinc-800 text-xs text-zinc-100"
               />
             </div>
           </div>
 
           <div>
-            <label htmlFor="manual-bullets" className="block text-xs text-slate-300 mb-1">
-              Logros y Viñetas (una por línea, estilo Harvard XYZ)
+            <label htmlFor="manual-bullets" className="block text-xs text-zinc-300 mb-1">
+              Viñetas de impacto (una por línea)
             </label>
             <textarea
               id="manual-bullets"
@@ -267,13 +260,13 @@ export function VaultExplorerPanel({
               value={manualBullets}
               onChange={(e) => setManualBullets(e.target.value)}
               placeholder="Implementé X logrando Y mediante Z..."
-              className="w-full p-2.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+              className="w-full p-2.5 rounded-md bg-zinc-900 border border-zinc-800 text-xs text-zinc-100"
             />
           </div>
 
           <div>
-            <label htmlFor="manual-techs" className="block text-xs text-slate-300 mb-1">
-              Tecnologías o Herramientas (separadas por coma)
+            <label htmlFor="manual-techs" className="block text-xs text-zinc-300 mb-1">
+              Tecnologías o competencias (separadas por coma)
             </label>
             <input
               id="manual-techs"
@@ -281,42 +274,40 @@ export function VaultExplorerPanel({
               type="text"
               value={manualTechs}
               onChange={(e) => setManualTechs(e.target.value)}
-              placeholder="Ej: Excel, Power BI, Python, SAP, Reaper..."
-              className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+              placeholder="Python, Next.js, PostgreSQL..."
+              className="w-full px-2.5 py-1.5 rounded-md bg-zinc-900 border border-zinc-800 text-xs text-zinc-100"
             />
           </div>
 
           <button
             type="submit"
-            className="px-4 py-2 rounded-lg bg-emerald-500 text-slate-950 font-bold text-xs hover:bg-emerald-400 transition"
+            className="px-4 py-2 rounded-md bg-zinc-100 text-zinc-950 font-semibold text-xs hover:bg-white transition-colors"
           >
-            Guardar en Bóveda
+            Guardar Registro
           </button>
         </form>
       )}
 
-      {/* Lista de Ítems */}
       {filteredItems.length === 0 ? (
-        <div className="p-8 text-center rounded-xl border border-dashed border-slate-800 text-slate-400 text-xs space-y-2">
-          <p className="font-semibold text-slate-300">
-            Tu Bóveda aún no tiene ítems en este perfil.
+        <div className="py-16 px-6 text-center rounded-lg border border-dashed border-zinc-800 text-zinc-400 text-xs space-y-1.5">
+          <p className="font-medium text-zinc-200">
+            No hay registros cargados en esta vista
           </p>
-          <p>
-            Pega tus experiencias en texto libre, sube un CV en PDF/DOCX o inscribe un
-            nuevo perfil laboral a la izquierda.
+          <p className="text-zinc-500">
+            Utiliza el panel izquierdo para estructurar texto libre o subir un CV en PDF/DOCX.
           </p>
         </div>
       ) : (
-        <ul role="list" className="space-y-3 max-h-[620px] overflow-y-auto pr-1">
+        <ul role="list" className="space-y-2.5">
           {filteredItems.map((item) => (
             <li
               key={item.id}
-              className="p-4 rounded-xl border border-slate-800/90 bg-slate-950/70 space-y-2"
+              className="p-4 rounded-lg border border-zinc-800/80 bg-zinc-950/70 hover:border-zinc-700/80 transition-colors space-y-2.5"
             >
-              <div className="flex items-start justify-between gap-2">
-                <div>
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+                    <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-zinc-900 text-zinc-400 border border-zinc-800">
                       {item.item_type}
                     </span>
                     {item.domain_tags?.map((tag) => {
@@ -324,26 +315,30 @@ export function VaultExplorerPanel({
                       return (
                         <span
                           key={tag}
-                          className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${badge.color}`}
+                          className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-0.5 rounded border ${badge.color}`}
                         >
+                          <span
+                            aria-hidden="true"
+                            className={`h-1.5 w-1.5 rounded-full ${badge.dotColor}`}
+                          />
                           {badge.label}
                         </span>
                       );
                     })}
                   </div>
-                  <h3 className="font-bold text-sm text-white mt-1.5">
+                  <h3 className="font-semibold text-sm text-zinc-100">
                     {item.title}
                     {item.organization && (
-                      <span className="text-slate-400 font-normal">
+                      <span className="text-zinc-400 font-normal">
                         {" "}
-                        • {item.organization}
+                        · {item.organization}
                       </span>
                     )}
                   </h3>
                   {(item.start_date || item.end_date || item.location) && (
-                    <p className="text-[11px] text-slate-400">
-                      {[item.start_date, item.end_date].filter(Boolean).join(" - ")}
-                      {item.location ? ` • ${item.location}` : ""}
+                    <p className="text-[11px] text-zinc-500 font-mono">
+                      {[item.start_date, item.end_date].filter(Boolean).join(" — ")}
+                      {item.location ? ` · ${item.location}` : ""}
                     </p>
                   )}
                 </div>
@@ -351,14 +346,14 @@ export function VaultExplorerPanel({
                   type="button"
                   aria-label={`Eliminar ${item.title} de la Bóveda`}
                   onClick={() => handleDeleteItem(item.id)}
-                  className="text-xs text-slate-400 hover:text-rose-400 px-2 py-1 rounded focus-visible:outline-2 focus-visible:outline-rose-400"
+                  className="text-xs text-zinc-500 hover:text-zinc-200 px-2 py-1 rounded"
                 >
                   ✕
                 </button>
               </div>
 
               {item.bullets?.length > 0 && (
-                <ul className="list-disc list-inside space-y-1 text-xs text-slate-300 leading-relaxed">
+                <ul className="list-disc list-inside space-y-1 text-xs text-zinc-300 leading-relaxed">
                   {item.bullets.map((b, idx) => (
                     <li key={idx}>{b}</li>
                   ))}
@@ -366,11 +361,11 @@ export function VaultExplorerPanel({
               )}
 
               {item.technologies?.length > 0 && (
-                <div className="flex flex-wrap gap-1 pt-1">
+                <div className="flex flex-wrap gap-1.5 pt-0.5">
                   {item.technologies.map((tech, idx) => (
                     <span
                       key={idx}
-                      className="text-[10px] px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-emerald-300"
+                      className="text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-300"
                     >
                       {tech}
                     </span>
@@ -381,6 +376,6 @@ export function VaultExplorerPanel({
           ))}
         </ul>
       )}
-    </div>
+    </section>
   );
 }

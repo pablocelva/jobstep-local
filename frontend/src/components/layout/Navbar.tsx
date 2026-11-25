@@ -3,73 +3,109 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { LLMSettings } from "@/types/studio";
 
 interface NavbarProps {
   vaultCount: number;
   cvCount: number;
+  apiOnline: boolean;
+  settings: LLMSettings | null;
 }
 
-export function Navbar({ vaultCount, cvCount }: NavbarProps) {
+export function Navbar({ vaultCount, cvCount, apiOnline, settings }: NavbarProps) {
   const pathname = usePathname();
 
   const navItems = [
-    { href: "/", label: `Mi Bóveda (${vaultCount})` },
-    { href: "/harvard-cvs", label: `CVs Formato Harvard (${cvCount})` },
-    { href: "/best-practices", label: "Guía Harvard & ATS" },
-    { href: "/settings", label: "Motor IA (Groq / Ollama)" },
+    { href: "/", label: "Bóveda", count: vaultCount },
+    { href: "/harvard-cvs", label: "CVs Harvard", count: cvCount },
+    { href: "/ats-evaluator", label: "Evaluador ATS" },
+    { href: "/best-practices", label: "Guía Harvard" },
+    { href: "/settings", label: "Configuración" },
   ];
 
-  return (
-    <header className="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur sticky top-0 z-20">
-      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
-        <Link
-          href="/"
-          className="flex items-center gap-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400 rounded-lg"
-        >
-          <div
-            aria-hidden="true"
-            className="h-9 w-9 rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-slate-950 font-black text-lg shrink-0"
-          >
-            JS
-          </div>
-          <div>
-            <span className="font-bold text-base tracking-tight text-white flex items-center gap-2">
-              JobStep Local
-              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                App Router • Multi-Perfil
-              </span>
-            </span>
-            <p className="text-xs text-slate-400">
-              TI Full-Stack • Servicio al Cliente • Producción Musical, Diseño Sonoro & Video
-            </p>
-          </div>
-        </Link>
+  const activeProviderLabel =
+    settings?.llm_provider === "ollama"
+      ? `Ollama · ${settings.ollama_model}`
+      : `Groq · ${settings?.groq_model?.replace("-versatile", "") || "llama-3.3-70b"}`;
 
-        {/* Site navigation landmark per modern-web-guidance `navbar` & `accessibility`:
-            - Single <nav aria-label="Primary"> with <ul role="list">
-            - Uses aria-current="page" as both the accessibility marker and CSS styling hook
-            - Active page indicator includes a bottom border shape (`aria-[current=page]:after:border-b-2`) so it never relies on color alone (WCAG 1.4.1) */}
-        <nav aria-label="Primary" className="overflow-x-auto py-1">
-          <ul role="list" className="flex items-center gap-1.5">
-            {navItems.map((item) => {
-              const isCurrent =
-                item.href === "/"
-                  ? pathname === "/"
-                  : pathname.startsWith(item.href);
-              return (
-                <li key={item.href} className="flex-none">
-                  <Link
-                    href={item.href}
-                    aria-current={isCurrent ? "page" : undefined}
-                    className="relative inline-flex items-center px-3.5 py-2 rounded-lg text-sm font-medium transition text-slate-300 hover:bg-slate-800/60 aria-[current=page]:bg-emerald-500/15 aria-[current=page]:text-emerald-300 aria-[current=page]:after:content-[''] aria-[current=page]:after:absolute aria-[current=page]:after:inset-x-2 aria-[current=page]:after:bottom-0 aria-[current=page]:after:border-b-2 aria-[current=page]:after:border-emerald-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-400"
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
+  return (
+    <header className="sticky top-0 z-30 border-b border-zinc-800/80 bg-[#09090b]/90 backdrop-blur-md">
+      <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between gap-6">
+        {/* Left: Compact Brand + Primary Navigation */}
+        <div className="flex items-center gap-6">
+          <Link
+            href="/"
+            className="flex items-center gap-2.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300 rounded"
+          >
+            <span
+              aria-hidden="true"
+              className="h-6 w-6 rounded bg-zinc-100 text-zinc-950 font-bold text-xs flex items-center justify-center tracking-tighter"
+            >
+              JS
+            </span>
+            <span className="font-semibold text-sm tracking-tight text-zinc-100">
+              JobStep
+            </span>
+            <span className="text-[11px] font-mono text-zinc-500 border-l border-zinc-800 pl-2">
+              local
+            </span>
+          </Link>
+
+          <nav aria-label="Primary">
+            <ul role="list" className="flex items-center gap-1">
+              {navItems.map((item) => {
+                const isCurrent =
+                  item.href === "/"
+                    ? pathname === "/"
+                    : pathname.startsWith(item.href);
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      aria-current={isCurrent ? "page" : undefined}
+                      className="relative inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 aria-[current=page]:text-zinc-100 aria-[current=page]:bg-zinc-900 aria-[current=page]:after:content-[''] aria-[current=page]:after:absolute aria-[current=page]:after:inset-x-2.5 aria-[current=page]:after:bottom-0 aria-[current=page]:after:border-b-2 aria-[current=page]:after:border-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300"
+                    >
+                      <span>{item.label}</span>
+                      {typeof item.count === "number" && (
+                        <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-800/90 text-zinc-300">
+                          {item.count}
+                        </span>
+                      )}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+        </div>
+
+        {/* Right: Discrete System Telemetry Pills (Replaces bulky 3-card status banner) */}
+        <div
+          role="status"
+          aria-live="polite"
+          className="hidden md:flex items-center gap-2 text-[11px] font-mono"
+        >
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-zinc-800 bg-zinc-900/70 text-zinc-300">
+            <span
+              aria-hidden="true"
+              className={`h-1.5 w-1.5 rounded-full ${
+                apiOnline ? "bg-emerald-400" : "bg-amber-400"
+              }`}
+            />
+            {apiOnline ? "API Online" : "API Offline"}
+          </span>
+
+          <Link
+            href="/settings"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-zinc-800 bg-zinc-900/70 text-zinc-300 hover:border-zinc-700 hover:text-zinc-100 transition-colors"
+          >
+            <span>{activeProviderLabel}</span>
+          </Link>
+
+          <span className="inline-flex items-center px-2 py-1 rounded-md border border-zinc-800/80 text-zinc-500 uppercase">
+            {settings?.database_backend || "sqlite"}
+          </span>
+        </div>
       </div>
     </header>
   );

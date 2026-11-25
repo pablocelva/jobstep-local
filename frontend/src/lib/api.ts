@@ -1,4 +1,5 @@
 import type {
+  ATSEvaluationResponse,
   BestPracticesData,
   CVVariant,
   CareerProfile,
@@ -205,4 +206,45 @@ export async function refreshBestPracticesRequest() {
     throw new Error(data.detail || "Verifica tu API Key antes de actualizar la guía.");
   }
   return data;
+}
+
+export async function evaluateCVATSRequest(payload: {
+  cv_variant_id?: number | null;
+  cv_text?: string | null;
+  job_description?: string | null;
+  language?: "auto" | "es" | "en";
+}): Promise<ATSEvaluationResponse> {
+  const res = await fetch(`${API_BASE}/api/ats/evaluate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.detail || "No se pudo evaluar el CV.");
+  }
+  return data as ATSEvaluationResponse;
+}
+
+export async function evaluateFileATSRequest(
+  file: File,
+  jobDescription?: string | null,
+  language: "auto" | "es" | "en" = "auto"
+): Promise<ATSEvaluationResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (jobDescription && jobDescription.trim()) {
+    formData.append("job_description", jobDescription.trim());
+  }
+  formData.append("language", language);
+
+  const res = await fetch(`${API_BASE}/api/ats/evaluate-file`, {
+    method: "POST",
+    body: formData,
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.detail || "Error al auditar el archivo PDF/DOCX.");
+  }
+  return data as ATSEvaluationResponse;
 }
