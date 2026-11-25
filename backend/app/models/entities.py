@@ -27,11 +27,34 @@ class AppSetting(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=utc_now)
 
 
+class CareerProfile(SQLModel, table=True):
+    """
+    Perfil Laboral Dinámico creado por el usuario o auto-descubierto desde CVs / Ofertas Laborales.
+    Permite que cualquier usuario de cualquier industria (Finanzas, Salud, Ingeniería, Diseño, Legal,
+    TI, Atención al Cliente, Música/Video, etc.) registre sus propios perfiles sin límites estáticos.
+    """
+
+    __tablename__ = "career_profiles"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    slug: str = Field(unique=True, index=True, description="Identificador único slugified, ej: 'data-science', 'ti-fullstack'")
+    name: str = Field(description="Nombre visible del perfil, ej: 'Data Scientist & ML Engineer'")
+    headline: str = Field(description="Titular profesional sugerido para el encabezado del CV Harvard")
+    description: Optional[str] = Field(default=None)
+    include_tags: list[str] = Field(
+        default_factory=list,
+        sa_column=Column(JSON, nullable=False),
+        description="Etiquetas de la Bóveda que pertenecen a este perfil (+ 'transversal')",
+    )
+    color_theme: str = Field(default="emerald", description="cyan | amber | purple | emerald | rose | sky | indigo")
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+
+
 class MasterProfileItem(SQLModel, table=True):
     """
     Ítem dentro de la Bóveda Profesional Maestra del usuario.
-    Puede provenir de un CV subido o de texto libre ('brain dump') estructurado al Formato Harvard.
-    Rubros soportados: ti-fullstack, ti-support, customer-service, music-production, sound-design, video-editing, transversal.
+    Acepta cualquier etiqueta de rubro o industria (`domain_tags`) dinámica definida por el usuario o detectada por IA.
     """
 
     __tablename__ = "master_profile_items"

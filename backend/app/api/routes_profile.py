@@ -1,9 +1,11 @@
 """
-Endpoints REST para la Fase 2:
-- Gestión de la Bóveda Profesional Multi-Perfil (CRUD + Filtros por área TI, Customer Service, Audio/Video).
-- Ingesta en Texto Libre ('Brain Dump') -> Estructuración automática al Formato Harvard + Google XYZ.
-- Ingesta de Archivos de CV (PDF / DOCX / MD / TXT) -> Almacenamiento físico en storage/master_profile/uploaded_cvs/ y extracción a la Bóveda.
-- Generador de Variantes de CV en Formato Harvard Moderno por rubro.
+Endpoints REST para Perfiles Laborales Dinámicos, Bóveda Profesional y Compilador Harvard:
+- Gestión de Perfiles Laborales Dinámicos (`/api/profile/career-profiles`): cualquier usuario puede
+  crear, inscribir o eliminar perfiles de cualquier industria o rol.
+- Gestión de la Bóveda Profesional (`/api/profile/items`).
+- Ingesta en Texto Libre (`/api/profile/ingest/free-text`) y Archivos (`/api/profile/ingest/file`) con
+  auto-descubrimiento de perfiles laborales.
+- Compilador de CVs en Formato Harvard (`/api/profile/cv-variants/generate-harvard`).
 """
 
 from datetime import datetime, timezone
@@ -14,9 +16,11 @@ from sqlmodel import Session, select
 
 from app.core.config import settings
 from app.core.database import get_session
-from app.models.entities import CVVariant, MasterProfileItem
+from app.models.entities import CVVariant, CareerProfile, MasterProfileItem
 from app.schemas.profile import (
     CVVariantResponse,
+    CareerProfileCreate,
+    CareerProfileResponse,
     FreeTextIngestRequest,
     GenerateHarvardCVRequest,
     ProfileItemCreate,
@@ -26,11 +30,66 @@ from app.schemas.profile import (
 from app.services.profile.document_extractor import validate_and_extract_document
 from app.services.profile.harvard_builder import (
     build_harvard_cv_variant,
+    ensure_career_profile_exists,
     ingest_raw_text_to_vault,
+    slugify_tag,
     sync_master_vault_json,
 )
 
-router = APIRouter(prefix="/api/profile", tags=["Master Profile Vault & Harvard CV Builder"])
+router = APIRouter(prefix="/api/profile", tags=["Dynamic Career Profiles, Vault & Harvard CV Builder"])
+
+
+@router.get("/career-profiles", response_model=list[CareerProfileResponse])
+def list_career_profiles(session: Session = Depends(get_session)) -> list[CareerProfile]:
+    """Lista todos los perfiles laborales inscritos por el usuario o auto-descubiertos."""
+    return list(session.exec(select(CareerProfile).order_by(CareerProfile.id.asc())).all())
+
+
+@router.post("/career-profiles", response_model=CareerProfileResponse)
+def create_career_profile(
+    payload: CareerProfileCreate,
+    session: Session = Depends(get_session),
+) -> CareerProfile:
+    """Inscribe un nuevo Perfil Laboral personalizado para cualquier industria o cargo."""
+    slug = slugify_tag(payload.slug or payload.name)
+    existing = session.exec(select(CareerProfile).where(CareerProfile.slug == slug)).first()
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Ya existe un perfil laboral inscrito con el identificador '{slug}'.",
+        )
+
+    clean_tags = [slugify_tag(t) for t in payload.include_tags if t.strip()]
+    merged_tags = list(dict.fromkeys([slug, *clean_tags, "transversal"]))
+
+    profile = CareerProfile(
+        slug=slug,
+        name=payload.name.strip(),
+        headline=(payload.headline or f"Especialista en {payload.name.strip()}").strip(),
+        description=payload.description,
+        include_tags=merged_tags,
+        color_theme=payload.color_theme,
+    )
+    session.add(profile)
+    session.commit()
+    session.refresh(profile)
+    sync_master_vault_json(session)
+    return profile
+
+
+@router.delete("/career-profiles/{profile_id}")
+def delete_career_profile(
+    profile_id: int,
+    session: Session = Depends(get_session),
+) -> dict[str, Any]:
+    """Elimina un perfil laboral inscrito (los ítems de la Bóveda se conservan intactos)."""
+    profile = session.get(CareerProfile, profile_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Perfil laboral no encontrado.")
+    session.delete(profile)
+    session.commit()
+    sync_master_vault_json(session)
+    return {"ok": True, "deleted_id": profile_id}
 
 
 @router.get("/items", response_model=list[ProfileItemResponse])
@@ -39,12 +98,18 @@ def list_profile_items(
     item_type: Optional[str] = None,
     session: Session = Depends(get_session),
 ) -> list[MasterProfileItem]:
-    """Lista los ítems de la Bóveda Maestra con filtro opcional por rubro o tipo."""
+    """Lista los ítems de la Bóveda Maestra con filtro opcional por perfil/etiqueta o tipo."""
     items = list(session.exec(select(MasterProfileItem).order_by(MasterProfileItem.id.desc())).all())
     if item_type:
         items = [i for i in items if i.item_type == item_type]
     if domain and domain != "all":
-        items = [i for i in items if domain in (i.domain_tags or [])]
+        profile = session.exec(select(CareerProfile).where(CareerProfile.slug == domain)).first()
+        target_tags = (
+            set(profile.include_tags or [domain]) - {"transversal"}
+            if profile
+            else {slugify_tag(domain)}
+        )
+        items = [i for i in items if set(i.domain_tags or []) & target_tags]
     return items
 
 
@@ -53,7 +118,12 @@ def create_profile_item(
     payload: ProfileItemCreate,
     session: Session = Depends(get_session),
 ) -> MasterProfileItem:
-    """Agrega manualmente un ítem (experiencia, proyecto, habilidad, contacto, educación) a la Bóveda Maestra."""
+    """Agrega manualmente un ítem a la Bóveda; si incluye una etiqueta de un perfil nuevo, lo inscribe."""
+    clean_tags = [slugify_tag(t) for t in payload.domain_tags if t.strip()] or ["general"]
+    for tag in clean_tags:
+        if tag not in {"transversal", "general"}:
+            ensure_career_profile_exists(session, tag)
+
     item = MasterProfileItem(
         item_type=payload.item_type,
         title=payload.title,
@@ -62,7 +132,7 @@ def create_profile_item(
         start_date=payload.start_date,
         end_date=payload.end_date,
         is_current=payload.is_current,
-        domain_tags=payload.domain_tags,
+        domain_tags=clean_tags,
         bullets=[b.strip() for b in payload.bullets if b.strip()],
         technologies=[t.strip() for t in payload.technologies if t.strip()],
         raw_source_text=payload.raw_source_text,
@@ -86,6 +156,8 @@ def update_profile_item(
         raise HTTPException(status_code=404, detail="Ítem no encontrado en la Bóveda.")
 
     update_data = payload.model_dump(exclude_unset=True)
+    if "domain_tags" in update_data and update_data["domain_tags"] is not None:
+        update_data["domain_tags"] = [slugify_tag(t) for t in update_data["domain_tags"] if str(t).strip()]
     for key, value in update_data.items():
         setattr(item, key, value)
     item.updated_at = datetime.now(timezone.utc)
@@ -118,9 +190,9 @@ async def ingest_free_text(
     session: Session = Depends(get_session),
 ) -> dict[str, Any]:
     """
-    Recibe texto libre sin formato ('brain dump') contando experiencias en TI, Servicio al Cliente
-    o Producción Musical / Sonido / Video, lo estructura con IA bajo reglas Harvard / Google XYZ,
-    lo guarda en la Bóveda Maestra y opcionalmente genera una variante de CV en Formato Harvard.
+    Recibe texto libre sin formato ('brain dump') de cualquier profesión o industria,
+    lo estructura con IA bajo reglas Harvard / Google XYZ, auto-inscribe perfiles nuevos
+    si los detecta y opcionalmente genera una variante de CV en Formato Harvard.
     """
     result = await ingest_raw_text_to_vault(
         session=session,
@@ -131,8 +203,8 @@ async def ingest_free_text(
     generated_cv: Optional[CVVariant] = None
     if payload.auto_generate_harvard_cv:
         target_domain = (
-            payload.default_domain_hint
-            if payload.default_domain_hint in {"ti-fullstack", "customer-service", "creative-media", "hybrid"}
+            slugify_tag(payload.default_domain_hint)
+            if payload.default_domain_hint and payload.default_domain_hint.lower() not in {"hybrid", "auto", "all"}
             else "hybrid"
         )
         cv_name = payload.cv_name or f"CV Harvard ({target_domain})"
@@ -163,7 +235,7 @@ async def ingest_cv_file(
     """
     Sube un CV existente (PDF, DOCX, MD o TXT), valida magic bytes y tamaño (<=10 MB),
     guarda una copia física en `storage/master_profile/uploaded_cvs/`, extrae su texto
-    con PyMuPDF/python-docx y estructura sus experiencias en la Bóveda Maestra.
+    y estructura sus experiencias e inscribe perfiles detectados en la Bóveda Maestra.
     """
     file_bytes = await file.read()
     try:
@@ -171,7 +243,6 @@ async def ingest_cv_file(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    # Guardar archivo original en `storage/master_profile/uploaded_cvs/`
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     saved_filename = f"{timestamp}_{extracted['filename']}"
     upload_dir = settings.STORAGE_DIR / "master_profile" / "uploaded_cvs"
@@ -194,8 +265,8 @@ async def ingest_cv_file(
     generated_cv: Optional[CVVariant] = None
     if auto_generate_harvard_cv:
         target_domain = (
-            default_domain_hint
-            if default_domain_hint in {"ti-fullstack", "customer-service", "creative-media", "hybrid"}
+            slugify_tag(default_domain_hint)
+            if default_domain_hint and default_domain_hint.lower() not in {"hybrid", "auto", "all"}
             else "hybrid"
         )
         generated_cv = await build_harvard_cv_variant(
@@ -229,13 +300,14 @@ async def generate_harvard_cv_endpoint(
     session: Session = Depends(get_session),
 ) -> CVVariant:
     """
-    Genera bajo demanda un CV en Formato Harvard filtrando tu Bóveda Maestra
-    para el perfil elegido: Full-Stack TI, Servicio al Cliente, Creativo (Música/Sonido/Video) o Híbrido.
+    Genera bajo demanda un CV en Formato Harvard filtrando la Bóveda Maestra
+    para cualquier perfil laboral registrado, cualquier etiqueta nueva o en modo híbrido.
     """
     return await build_harvard_cv_variant(
         session=session,
         name=payload.name,
         target_domain=payload.target_domain,
+        custom_role_headline=payload.custom_role_headline,
         custom_focus_notes=payload.custom_focus_notes,
         language=payload.language,
         use_ai_polish=payload.use_ai_polish,

@@ -65,8 +65,15 @@ def get_db_status() -> dict[str, str]:
 
 
 def init_db() -> None:
-    """Inicializa todas las tablas de SQLModel y asegura la fila de configuración por defecto."""
-    from app.models.entities import AppSetting, MasterProfileItem, CVVariant, JobApplication, BestPracticeGuide  # noqa: F401
+    """Inicializa todas las tablas de SQLModel, configuración por defecto y perfiles iniciales personalizables."""
+    from app.models.entities import (  # noqa: F401
+        AppSetting,
+        BestPracticeGuide,
+        CVVariant,
+        CareerProfile,
+        JobApplication,
+        MasterProfileItem,
+    )
 
     SQLModel.metadata.create_all(engine)
 
@@ -84,6 +91,40 @@ def init_db() -> None:
                 preferred_language="es",
             )
             session.add(default_setting)
+            session.commit()
+
+        # Semilla inicial de perfiles de ejemplo (100% editables/eliminables y abiertos a nuevos perfiles)
+        from sqlmodel import select
+        existing_profiles = session.exec(select(CareerProfile)).all()
+        if not existing_profiles:
+            starter_profiles = [
+                CareerProfile(
+                    slug="ti-fullstack",
+                    name="TI & Full-Stack Development",
+                    headline="Full-Stack Developer & Especialista en Ingeniería de Software",
+                    description="Desarrollo web, backend, frontend, bases de datos, arquitectura y soporte TI.",
+                    include_tags=["ti-fullstack", "ti-support", "transversal"],
+                    color_theme="cyan",
+                ),
+                CareerProfile(
+                    slug="customer-service",
+                    name="Servicio al Cliente & Soporte",
+                    headline="Especialista en Atención al Cliente, Soporte Técnico-Comercial & Operaciones",
+                    description="Atención a usuarios, resolución de incidencias, comunicación efectiva y CRM.",
+                    include_tags=["customer-service", "ti-support", "transversal"],
+                    color_theme="amber",
+                ),
+                CareerProfile(
+                    slug="creative-media",
+                    name="Producción Musical, Diseño Sonoro & Video",
+                    headline="Productor Musical, Diseñador Sonoro & Editor de Video Postproducción",
+                    description="Composición, producción musical, sound design (Foley/SFX) y edición audiovisual.",
+                    include_tags=["music-production", "sound-design", "video-editing", "creative-media", "transversal"],
+                    color_theme="purple",
+                ),
+            ]
+            for p in starter_profiles:
+                session.add(p)
             session.commit()
 
 

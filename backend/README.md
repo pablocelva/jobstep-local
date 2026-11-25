@@ -84,6 +84,9 @@ backend/
 
 | Metodo | Ruta | Descripcion |
 | :--- | :--- | :--- |
+| `GET` | `/api/profile/career-profiles` | Lista todos los Perfiles Laborales dinamicos inscritos por el usuario o auto-descubiertos. |
+| `POST` | `/api/profile/career-profiles` | Inscribe un nuevo Perfil Laboral personalizado para cualquier industria o rol. |
+| `DELETE` | `/api/profile/career-profiles/{profile_id}` | Elimina un Perfil Laboral inscrito (conservando intactos los items de la Boveda). |
 | `GET` | `/api/profile/items` | Lista los items de la Boveda Maestra con filtros opcionales `domain` e `item_type`. |
 | `POST` | `/api/profile/items` | Crea manualmente un item en la Boveda y sincroniza `master_knowledge_base.json`. |
 | `PUT` | `/api/profile/items/{item_id}` | Actualiza un item existente en la Boveda Maestra. |

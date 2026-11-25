@@ -1,8 +1,10 @@
 import type {
   BestPracticesData,
   CVVariant,
+  CareerProfile,
   LLMSettings,
   LLMTestResult,
+  ProfileColorTheme,
   ProfileItem,
   TargetDomain,
 } from "@/types/studio";
@@ -12,26 +14,32 @@ export const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:800
 export async function fetchStudioBootstrap(): Promise<{
   settings: LLMSettings | null;
   guide: BestPracticesData | null;
+  careerProfiles: CareerProfile[];
   items: ProfileItem[];
   cvVariants: CVVariant[];
   online: boolean;
 }> {
   try {
-    const [settingsRes, guideRes, itemsRes, cvsRes] = await Promise.all([
+    const [settingsRes, guideRes, profilesRes, itemsRes, cvsRes] = await Promise.all([
       fetch(`${API_BASE}/api/settings/llm`),
       fetch(`${API_BASE}/api/best-practices`),
+      fetch(`${API_BASE}/api/profile/career-profiles`),
       fetch(`${API_BASE}/api/profile/items`),
       fetch(`${API_BASE}/api/profile/cv-variants`),
     ]);
 
     const settings = settingsRes.ok ? ((await settingsRes.json()) as LLMSettings) : null;
     const guide = guideRes.ok ? ((await guideRes.json()) as BestPracticesData) : null;
+    const careerProfiles = profilesRes.ok
+      ? ((await profilesRes.json()) as CareerProfile[])
+      : [];
     const items = itemsRes.ok ? ((await itemsRes.json()) as ProfileItem[]) : [];
     const cvVariants = cvsRes.ok ? ((await cvsRes.json()) as CVVariant[]) : [];
 
     return {
       settings,
       guide,
+      careerProfiles,
       items,
       cvVariants,
       online: settingsRes.ok,
@@ -40,11 +48,37 @@ export async function fetchStudioBootstrap(): Promise<{
     return {
       settings: null,
       guide: null,
+      careerProfiles: [],
       items: [],
       cvVariants: [],
       online: false,
     };
   }
+}
+
+export async function createCareerProfileRequest(payload: {
+  name: string;
+  headline?: string;
+  description?: string;
+  include_tags?: string[];
+  color_theme?: ProfileColorTheme;
+}): Promise<CareerProfile> {
+  const res = await fetch(`${API_BASE}/api/profile/career-profiles`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.detail || "No se pudo inscribir el perfil laboral.");
+  }
+  return data as CareerProfile;
+}
+
+export async function deleteCareerProfileRequest(id: number) {
+  await fetch(`${API_BASE}/api/profile/career-profiles/${id}`, {
+    method: "DELETE",
+  });
 }
 
 export async function ingestFreeTextRequest(payload: {
@@ -112,6 +146,7 @@ export async function deleteProfileItemRequest(id: number) {
 export async function generateHarvardCVRequest(payload: {
   name: string;
   target_domain: TargetDomain;
+  custom_role_headline?: string | null;
   custom_focus_notes: string | null;
   language: "es" | "en";
   use_ai_polish: boolean;

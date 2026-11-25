@@ -1,16 +1,21 @@
 "use client";
 
-import React, { useState } from "react";
-import { DOMAIN_BADGES, DOMAIN_FILTER_TABS } from "@/constants/domains";
+import React, { useMemo, useState } from "react";
+import { resolveTagBadge } from "@/constants/domains";
 import { createManualProfileItemRequest, deleteProfileItemRequest } from "@/lib/api";
-import type { ProfileItem } from "@/types/studio";
+import type { CareerProfile, ProfileItem } from "@/types/studio";
 
 interface VaultExplorerPanelProps {
+  careerProfiles: CareerProfile[];
   items: ProfileItem[];
   onDataChanged: () => Promise<void>;
 }
 
-export function VaultExplorerPanel({ items, onDataChanged }: VaultExplorerPanelProps) {
+export function VaultExplorerPanel({
+  careerProfiles,
+  items,
+  onDataChanged,
+}: VaultExplorerPanelProps) {
   const [domainFilter, setDomainFilter] = useState<string>("all");
   const [showManualForm, setShowManualForm] = useState<boolean>(false);
 
@@ -18,14 +23,55 @@ export function VaultExplorerPanel({ items, onDataChanged }: VaultExplorerPanelP
   const [manualTitle, setManualTitle] = useState<string>("");
   const [manualOrg, setManualOrg] = useState<string>("");
   const [manualDates, setManualDates] = useState<string>("2024 - Actualidad");
-  const [manualDomain, setManualDomain] = useState<string>("ti-fullstack");
+  const [manualDomain, setManualDomain] = useState<string>(
+    careerProfiles[0]?.slug || "general"
+  );
   const [manualBullets, setManualBullets] = useState<string>("");
   const [manualTechs, setManualTechs] = useState<string>("");
 
-  const filteredItems =
-    domainFilter === "all"
-      ? items
-      : items.filter((item) => item.domain_tags?.includes(domainFilter));
+  // Construye las pestañas de filtro combinando los Perfiles Laborales inscritos + cualquier etiqueta descubierta en los ítems
+  const dynamicFilterTabs = useMemo(() => {
+    const tabs: { id: string; label: string }[] = [
+      { id: "all", label: "Todos los Perfiles" },
+    ];
+    const seen = new Set<string>(["all"]);
+
+    for (const prof of careerProfiles) {
+      if (!seen.has(prof.slug)) {
+        tabs.push({ id: prof.slug, label: prof.name });
+        seen.add(prof.slug);
+      }
+    }
+
+    for (const item of items) {
+      for (const tag of item.domain_tags || []) {
+        const coveredByProfile = careerProfiles.some(
+          (p) => p.slug === tag || p.include_tags?.includes(tag)
+        );
+        if (!seen.has(tag) && !coveredByProfile && tag !== "transversal") {
+          tabs.push({ id: tag, label: tag });
+          seen.add(tag);
+        }
+      }
+    }
+    return tabs;
+  }, [careerProfiles, items]);
+
+  const filteredItems = useMemo(() => {
+    if (domainFilter === "all") return items;
+    const selectedProfile = careerProfiles.find((p) => p.slug === domainFilter);
+    const matchingTags = selectedProfile
+      ? new Set(
+          (selectedProfile.include_tags || [domainFilter]).filter(
+            (t) => t !== "transversal"
+          )
+        )
+      : new Set([domainFilter]);
+
+    return items.filter((item) =>
+      (item.domain_tags || []).some((t) => matchingTags.has(t))
+    );
+  }, [careerProfiles, domainFilter, items]);
 
   const handleManualAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +85,7 @@ export function VaultExplorerPanel({ items, onDataChanged }: VaultExplorerPanelP
       start_date: startDate || null,
       end_date: endDate || null,
       is_current: manualDates.toLowerCase().includes("actual"),
-      domain_tags: [manualDomain],
+      domain_tags: [manualDomain.trim() || "general"],
       bullets: manualBullets
         .split("\n")
         .map((b) => b.replace(/^[-•*]\s*/, "").trim())
@@ -87,10 +133,10 @@ export function VaultExplorerPanel({ items, onDataChanged }: VaultExplorerPanelP
         </button>
       </div>
 
-      {/* Filtros por Rubro envueltos en <search> según modern-web-guidance `forms` */}
-      <search aria-label="Filtrar ítems de la Bóveda por rubro profesional">
+      {/* Filtros dinámicos por Perfil Laboral envueltos en <search> */}
+      <search aria-label="Filtrar ítems de la Bóveda por perfil laboral">
         <div className="flex flex-wrap gap-1.5">
-          {DOMAIN_FILTER_TABS.map((tab) => {
+          {dynamicFilterTabs.map((tab) => {
             const isPressed = domainFilter === tab.id;
             return (
               <button
@@ -111,7 +157,7 @@ export function VaultExplorerPanel({ items, onDataChanged }: VaultExplorerPanelP
         </div>
       </search>
 
-      {/* Formulario manual colapsable con etiquetas explícitas <label htmlFor> */}
+      {/* Formulario manual colapsable con soporte para elegir o escribir cualquier perfil */}
       {showManualForm && (
         <form
           aria-label="Agregar ítem manual a la Bóveda"
@@ -140,23 +186,25 @@ export function VaultExplorerPanel({ items, onDataChanged }: VaultExplorerPanelP
 
             <div>
               <label htmlFor="manual-domain-tag" className="block text-xs text-slate-300 mb-1">
-                Rubro Principal
+                Perfil o Rubro (elige o escribe uno nuevo)
               </label>
-              <select
+              <input
                 id="manual-domain-tag"
                 name="domain_tag"
+                list="manual-profiles-datalist"
                 value={manualDomain}
                 onChange={(e) => setManualDomain(e.target.value)}
+                placeholder="Ej: data-science, marketing..."
                 className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
-              >
-                <option value="ti-fullstack">TI / Full-Stack</option>
-                <option value="ti-support">Soporte TI</option>
-                <option value="customer-service">Servicio al Cliente</option>
-                <option value="music-production">Producción Musical</option>
-                <option value="sound-design">Diseño Sonoro</option>
-                <option value="video-editing">Edición de Video</option>
-                <option value="transversal">Transversal</option>
-              </select>
+              />
+              <datalist id="manual-profiles-datalist">
+                {careerProfiles.map((p) => (
+                  <option key={p.slug} value={p.slug}>
+                    {p.name}
+                  </option>
+                ))}
+                <option value="transversal">Transversal (Todos los perfiles)</option>
+              </datalist>
             </div>
 
             <div>
@@ -187,7 +235,7 @@ export function VaultExplorerPanel({ items, onDataChanged }: VaultExplorerPanelP
                 required
                 value={manualTitle}
                 onChange={(e) => setManualTitle(e.target.value)}
-                placeholder="Ej: Full-Stack Developer"
+                placeholder="Ej: Analista Financiero / Full-Stack Dev"
                 className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
               />
             </div>
@@ -202,7 +250,7 @@ export function VaultExplorerPanel({ items, onDataChanged }: VaultExplorerPanelP
                 type="text"
                 value={manualOrg}
                 onChange={(e) => setManualOrg(e.target.value)}
-                placeholder="Ej: Freelance / Empresa"
+                placeholder="Ej: Empresa / Freelance"
                 className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
               />
             </div>
@@ -218,7 +266,7 @@ export function VaultExplorerPanel({ items, onDataChanged }: VaultExplorerPanelP
               rows={3}
               value={manualBullets}
               onChange={(e) => setManualBullets(e.target.value)}
-              placeholder="Desarrollé X logrando Y mediante Z..."
+              placeholder="Implementé X logrando Y mediante Z..."
               className="w-full p-2.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
             />
           </div>
@@ -233,7 +281,7 @@ export function VaultExplorerPanel({ items, onDataChanged }: VaultExplorerPanelP
               type="text"
               value={manualTechs}
               onChange={(e) => setManualTechs(e.target.value)}
-              placeholder="Python, Next.js, PostgreSQL, Reaper, DaVinci"
+              placeholder="Ej: Excel, Power BI, Python, SAP, Reaper..."
               className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
             />
           </div>
@@ -251,19 +299,15 @@ export function VaultExplorerPanel({ items, onDataChanged }: VaultExplorerPanelP
       {filteredItems.length === 0 ? (
         <div className="p-8 text-center rounded-xl border border-dashed border-slate-800 text-slate-400 text-xs space-y-2">
           <p className="font-semibold text-slate-300">
-            Tu Bóveda aún no tiene ítems en esta categoría.
+            Tu Bóveda aún no tiene ítems en este perfil.
           </p>
           <p>
-            Haz clic en <strong>&ldquo;Cargar ejemplo multi-perfil&rdquo;</strong> a la
-            izquierda o pega tu información en texto libre para que el sistema arme tu Bóveda
-            y tu CV Harvard automáticamente.
+            Pega tus experiencias en texto libre, sube un CV en PDF/DOCX o inscribe un
+            nuevo perfil laboral a la izquierda.
           </p>
         </div>
       ) : (
-        <ul
-          role="list"
-          className="space-y-3 max-h-[620px] overflow-y-auto pr-1"
-        >
+        <ul role="list" className="space-y-3 max-h-[620px] overflow-y-auto pr-1">
           {filteredItems.map((item) => (
             <li
               key={item.id}
@@ -276,10 +320,7 @@ export function VaultExplorerPanel({ items, onDataChanged }: VaultExplorerPanelP
                       {item.item_type}
                     </span>
                     {item.domain_tags?.map((tag) => {
-                      const badge = DOMAIN_BADGES[tag] || {
-                        label: tag,
-                        color: "bg-slate-800 text-slate-300 border-slate-700",
-                      };
+                      const badge = resolveTagBadge(tag, careerProfiles);
                       return (
                         <span
                           key={tag}

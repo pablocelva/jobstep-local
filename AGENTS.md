@@ -8,8 +8,10 @@
 
 **JobStep Local** es una plataforma de uso local inspirada en la ingeniería interna de *JobStep (jobstep.io)*, diseñada específicamente para evaluar, optimizar, adaptar y organizar CVs frente a sistemas **ATS (Applicant Tracking Systems)**.
 
-### Caso de Uso Principal del Usuario
-El usuario posee un perfil **multidisciplinario** y postula activamente a tres grandes áreas (buscando rol Full-Stack en TI como meta principal, además de oportunidades laborales generales y trabajo freelance):
+### Caso de Uso Principal y Sistema de Perfiles Laborales 100% Dinámicos
+El sistema cuenta con un **Motor de Perfiles Laborales Dinámicos (`CareerProfile`)** para que **cualquier persona de cualquier industria** (Finanzas, Salud, Marketing, Ingeniería, Legal, Diseño, Educación, etc.) pueda inscribir sus propios perfiles laborales o dejar que la IA los descubra e inscriba automáticamente al procesar un CV o una oferta laboral.
+
+Como semilla inicial de ejemplo (100% editable y eliminable desde la UI), el sistema viene pre-cargado con los tres perfiles del creador del proyecto:
 1. **Área TI / Desarrollo (`ti-fullstack`, `ti-support`):** Desarrollo Full-Stack (Python, JS/TS, Next.js, SQL, etc.) y soporte/infraestructura.
 2. **Área Servicio al Cliente (`customer-service`):** Atención a clientes, soporte técnico/comercial, resolución de problemas, comunicación.
 3. **Área Técnica-Artística & Multimedia (`music-production`, `sound-design`, `video-editing`):** Composición, producción musical, diseño sonoro y edición de video.

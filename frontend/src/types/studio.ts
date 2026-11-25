@@ -1,6 +1,25 @@
-export type StudioTab = "vault" | "harvard-cvs" | "best-practices" | "settings";
+export type TargetDomain = string;
 
-export type TargetDomain = "ti-fullstack" | "customer-service" | "creative-media" | "hybrid";
+export type ProfileColorTheme =
+  | "cyan"
+  | "amber"
+  | "purple"
+  | "emerald"
+  | "rose"
+  | "sky"
+  | "indigo";
+
+export interface CareerProfile {
+  id: number;
+  slug: string;
+  name: string;
+  headline: string;
+  description: string | null;
+  include_tags: string[];
+  color_theme: ProfileColorTheme;
+  created_at: string;
+  updated_at: string;
+}
 
 export interface LLMSettings {
   llm_provider: "groq" | "ollama";

@@ -1,35 +1,46 @@
 "use client";
 
 import React, { useState } from "react";
-import type { CVVariant, TargetDomain } from "@/types/studio";
+import type { CVVariant, CareerProfile, TargetDomain } from "@/types/studio";
 
 interface HarvardCVStudioProps {
+  careerProfiles: CareerProfile[];
   cvVariants: CVVariant[];
   selectedCV: CVVariant | null;
   onSelectCV: (cv: CVVariant) => void;
   onCompileCV: (
     domain: TargetDomain,
     name: string,
-    notes: string | null
+    notes: string | null,
+    customHeadline: string | null
   ) => Promise<void>;
   generatingCV: boolean;
 }
 
 export function HarvardCVStudio({
+  careerProfiles,
   cvVariants,
   selectedCV,
   onSelectCV,
   onCompileCV,
   generatingCV,
 }: HarvardCVStudioProps) {
-  const [genName, setGenName] = useState<string>("CV Harvard — Full-Stack TI");
-  const [genDomain, setGenDomain] = useState<TargetDomain>("ti-fullstack");
+  const [genName, setGenName] = useState<string>("CV Formato Harvard");
+  const [genDomain, setGenDomain] = useState<TargetDomain>(
+    careerProfiles[0]?.slug || "hybrid"
+  );
+  const [genHeadline, setGenHeadline] = useState<string>("");
   const [genNotes, setGenNotes] = useState<string>("");
   const [copied, setCopied] = useState<boolean>(false);
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onCompileCV(genDomain, genName, genNotes.trim() || null);
+    await onCompileCV(
+      genDomain.trim() || "hybrid",
+      genName,
+      genNotes.trim() || null,
+      genHeadline.trim() || null
+    );
   };
 
   const handleCopyMarkdown = async () => {
@@ -48,7 +59,7 @@ export function HarvardCVStudio({
           className="p-5 rounded-2xl border border-slate-800 bg-slate-900/70 space-y-3"
         >
           <h2 id="harvard-generator-heading" className="text-base font-bold text-white">
-            Generador Personalizado Formato Harvard
+            Generador Dinámico Formato Harvard
           </h2>
 
           <div>
@@ -68,27 +79,50 @@ export function HarvardCVStudio({
 
           <div>
             <label htmlFor="harvard-cv-domain" className="block text-xs text-slate-300 mb-1">
-              Perfil Objetivo
+              Perfil Laboral Objetivo (elige uno o escribe cualquier perfil nuevo)
             </label>
-            <select
+            <input
               id="harvard-cv-domain"
               name="target_domain"
+              list="harvard-profiles-datalist"
               value={genDomain}
-              onChange={(e) => setGenDomain(e.target.value as TargetDomain)}
+              onChange={(e) => setGenDomain(e.target.value)}
+              placeholder="Ej: hybrid, data-science, finanzas..."
               className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white"
-            >
-              <option value="ti-fullstack">Perfil TI / Full-Stack Developer</option>
-              <option value="customer-service">Perfil Servicio al Cliente & Soporte</option>
-              <option value="creative-media">
-                Perfil Producción Musical, Diseño Sonoro & Video
+            />
+            <datalist id="harvard-profiles-datalist">
+              <option value="hybrid">
+                Perfil Híbrido Completo (Incluir toda la Bóveda)
               </option>
-              <option value="hybrid">Perfil Híbrido Completo (Todos los rubros)</option>
-            </select>
+              {careerProfiles.map((p) => (
+                <option key={p.slug} value={p.slug}>
+                  {p.name} — {p.headline}
+                </option>
+              ))}
+            </datalist>
+          </div>
+
+          <div>
+            <label
+              htmlFor="harvard-cv-headline"
+              className="block text-xs text-slate-300 mb-1"
+            >
+              Titular personalizado o Cargo de la Oferta (opcional)
+            </label>
+            <input
+              id="harvard-cv-headline"
+              name="custom_role_headline"
+              type="text"
+              value={genHeadline}
+              onChange={(e) => setGenHeadline(e.target.value)}
+              placeholder="Ej: Senior Backend Engineer / Product Manager..."
+              className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white"
+            />
           </div>
 
           <div>
             <label htmlFor="harvard-cv-notes" className="block text-xs text-slate-300 mb-1">
-              Notas opcionales de enfoque para el Resumen Harvard
+              Notas de enfoque o requisitos de la oferta laboral
             </label>
             <textarea
               id="harvard-cv-notes"
@@ -96,7 +130,7 @@ export function HarvardCVStudio({
               rows={3}
               value={genNotes}
               onChange={(e) => setGenNotes(e.target.value)}
-              placeholder="Ej: Destacar experiencia en Python, FastAPI y trato con clientes..."
+              placeholder="Pega requisitos clave de la oferta o instrucciones para adaptar el Resumen Ejecutivo..."
               className="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-700 text-xs text-white"
             />
           </div>

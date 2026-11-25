@@ -6,6 +6,7 @@ import { useStudio } from "@/context/StudioContext";
 
 export default function HarvardCVsPage() {
   const {
+    careerProfiles,
     cvVariants,
     selectedCV,
     setSelectedCV,
@@ -15,6 +16,7 @@ export default function HarvardCVsPage() {
 
   return (
     <HarvardCVStudio
+      careerProfiles={careerProfiles}
       cvVariants={cvVariants}
       selectedCV={selectedCV}
       onSelectCV={setSelectedCV}
