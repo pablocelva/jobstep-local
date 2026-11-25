@@ -1,0 +1,173 @@
+import type {
+  BestPracticesData,
+  CVVariant,
+  LLMSettings,
+  LLMTestResult,
+  ProfileItem,
+  TargetDomain,
+} from "@/types/studio";
+
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+export async function fetchStudioBootstrap(): Promise<{
+  settings: LLMSettings | null;
+  guide: BestPracticesData | null;
+  items: ProfileItem[];
+  cvVariants: CVVariant[];
+  online: boolean;
+}> {
+  try {
+    const [settingsRes, guideRes, itemsRes, cvsRes] = await Promise.all([
+      fetch(`${API_BASE}/api/settings/llm`),
+      fetch(`${API_BASE}/api/best-practices`),
+      fetch(`${API_BASE}/api/profile/items`),
+      fetch(`${API_BASE}/api/profile/cv-variants`),
+    ]);
+
+    const settings = settingsRes.ok ? ((await settingsRes.json()) as LLMSettings) : null;
+    const guide = guideRes.ok ? ((await guideRes.json()) as BestPracticesData) : null;
+    const items = itemsRes.ok ? ((await itemsRes.json()) as ProfileItem[]) : [];
+    const cvVariants = cvsRes.ok ? ((await cvsRes.json()) as CVVariant[]) : [];
+
+    return {
+      settings,
+      guide,
+      items,
+      cvVariants,
+      online: settingsRes.ok,
+    };
+  } catch {
+    return {
+      settings: null,
+      guide: null,
+      items: [],
+      cvVariants: [],
+      online: false,
+    };
+  }
+}
+
+export async function ingestFreeTextRequest(payload: {
+  raw_text: string;
+  default_domain_hint: string;
+  auto_generate_harvard_cv: boolean;
+  cv_name: string;
+}) {
+  const res = await fetch(`${API_BASE}/api/profile/ingest/free-text`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.detail || "No se pudo procesar el texto libre.");
+  }
+  return data;
+}
+
+export async function ingestFileRequest(file: File, domainHint: string) {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("default_domain_hint", domainHint);
+  formData.append("auto_generate_harvard_cv", "true");
+
+  const res = await fetch(`${API_BASE}/api/profile/ingest/file`, {
+    method: "POST",
+    body: formData,
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.detail || "Error al procesar el archivo subido.");
+  }
+  return data;
+}
+
+export async function createManualProfileItemRequest(payload: {
+  item_type: string;
+  title: string;
+  organization: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  is_current: boolean;
+  domain_tags: string[];
+  bullets: string[];
+  technologies: string[];
+}) {
+  const res = await fetch(`${API_BASE}/api/profile/items`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || "Error al crear ítem manual.");
+  }
+  return (await res.json()) as ProfileItem;
+}
+
+export async function deleteProfileItemRequest(id: number) {
+  await fetch(`${API_BASE}/api/profile/items/${id}`, { method: "DELETE" });
+}
+
+export async function generateHarvardCVRequest(payload: {
+  name: string;
+  target_domain: TargetDomain;
+  custom_focus_notes: string | null;
+  language: "es" | "en";
+  use_ai_polish: boolean;
+}): Promise<CVVariant> {
+  const res = await fetch(`${API_BASE}/api/profile/cv-variants/generate-harvard`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.detail || "Error al compilar CV Harvard.");
+  }
+  return data as CVVariant;
+}
+
+export async function updateLLMSettingsRequest(payload: {
+  llm_provider: "groq" | "ollama";
+  groq_api_key: string | null;
+  groq_model: string;
+  groq_fast_model: string;
+  groq_search_model: string;
+  ollama_base_url: string;
+  ollama_model: string;
+  preferred_language: "es" | "en";
+}): Promise<LLMSettings> {
+  const res = await fetch(`${API_BASE}/api/settings/llm`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.detail || "Error al actualizar configuración IA.");
+  }
+  return data as LLMSettings;
+}
+
+export async function testLLMConnectionRequest(
+  provider: "groq" | "ollama"
+): Promise<LLMTestResult> {
+  const res = await fetch(`${API_BASE}/api/settings/llm/test`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ provider }),
+  });
+  return (await res.json()) as LLMTestResult;
+}
+
+export async function refreshBestPracticesRequest() {
+  const res = await fetch(`${API_BASE}/api/best-practices/refresh`, {
+    method: "POST",
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.detail || "Verifica tu API Key antes de actualizar la guía.");
+  }
+  return data;
+}

@@ -88,7 +88,15 @@ jobstep-local/
   - Esquema `SQLModel` (`backend/app/models/entities.py`): `AppSetting`, `MasterProfileItem`, `CVVariant`, `JobApplication` y `BestPracticeGuide`.
   - Adaptador de IA Dual (`backend/app/services/llm/provider.py`): `Groq` por defecto + `Ollama` local con protección anti-SSRF y endpoints `/api/settings/llm`, `/api/settings/llm/test` y `/api/best-practices/refresh`.
   - Frontend Next.js `^16.4.6` (`frontend/src/app/page.tsx`) con Panel Principal, Guía Harvard/ATS actualizable con IA y configuración en vivo de Groq/Ollama.
-- **[Pendiente] Fase 2 - Bóveda Profesional Multi-Perfil (TI, Servicio al Cliente, Audio/Música/Video) e Ingesta de CVs / Texto Libre a Formato Harvard.**
+- **[Completado] Fase 2 - Bóveda Profesional Multi-Perfil (TI, Servicio al Cliente, Audio/Música/Video) e Ingesta de CVs / Texto Libre a Formato Harvard:**
+  - Extractor seguro de documentos (`backend/app/services/profile/document_extractor.py`): soporta PDF (`PyMuPDF 2.1` con detección geométrica de múltiples columnas), DOCX (`python-docx` + `defusedxml` anti-XXE), MD y TXT con validación de *magic bytes* y límite de 10 MB.
+  - Estructurador Multi-Perfil y Compilador Harvard (`backend/app/services/profile/harvard_builder.py`): transforma texto libre ("brain dump") o CVs subidos en ítems de la Bóveda Maestra etiquetados por rubro (`ti-fullstack`, `ti-support`, `customer-service`, `music-production`, `sound-design`, `video-editing`, `transversal`), sincroniza `storage/master_profile/master_knowledge_base.json` y compila CVs en **Formato Harvard Moderno** guardados en disco y DB.
+  - Endpoints REST (`backend/app/api/routes_profile.py`): `/api/profile/items`, `/api/profile/ingest/free-text`, `/api/profile/ingest/file` y `/api/profile/cv-variants/generate-harvard`.
+  - Interfaz Next.js 16.4.6 con File-System Routing nativo del App Router (`frontend/src/`):
+    - `app/layout.tsx` + `components/layout/AppShell.tsx` + `context/StudioContext.tsx`: Shell persistente con navegación `<Link>` (`Navbar.tsx`) y `StatusBanner.tsx`.
+    - Rutas nativas: `app/page.tsx` (`/` Mi Bóveda), `app/harvard-cvs/page.tsx` (`/harvard-cvs`), `app/best-practices/page.tsx` (`/best-practices`) y `app/settings/page.tsx` (`/settings`).
+    - `types/studio.ts`, `constants/domains.ts` y `lib/api.ts`: Tipado estricto TypeScript y capa de cliente HTTP desacoplada.
+    - Componentes por dominio (`components/layout/`, `components/vault/`, `components/harvard/`, `components/guide/`, `components/settings/`) construidos siguiendo las guías `navbar`, `forms` y `accessibility` de `modern-web-guidance`.
 - **[Pendiente] Fase 3 - Motor Evaluador ATS Core (Parser PDF/DOCX + Heurísticas + Keyword Matcher).**
 - **[Pendiente] Fase 4 - Gestor de Ofertas Laborales y Sincronización en Carpetas Locales (`.md` + CVs).**
 - **[Pendiente] Fase 5 - Copiloto de Reescritura Viñeta por Viñeta y Exportador PDF ATS-Friendly.**
