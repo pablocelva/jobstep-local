@@ -1,0 +1,70 @@
+# ==============================================================================
+# JobStep Local — Docker Compose (Multi-Modo)
+# ------------------------------------------------------------------------------
+# 1) Si ya tienes PostgreSQL local con pgAdmin (tu caso):
+#    NO necesitas correr Docker para trabajar localmente.
+# 2) Si un dev quiere levantar solo una DB limpia en Docker (puerto 5433 para no
+#    chocar con un Postgres local en 5432):
+#    docker compose up -d db
+# 3) Si alguien quiere levantar TODO el stack en contenedores sin instalar nada:
+#    docker compose --profile fullstack up --build -d
+# ==============================================================================
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: jobstep-local-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-jobstep_local}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - jobstep_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-jobstep_local}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    profiles: ["fullstack"]
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: jobstep-local-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-jobstep_local}
+      LLM_PROVIDER: ${LLM_PROVIDER:-groq}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_DEFAULT_MODEL: ${GROQ_DEFAULT_MODEL:-llama-3.3-70b-versatile}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_DEFAULT_MODEL: ${OLLAMA_DEFAULT_MODEL:-llama3.1:8b}
+      STORAGE_DIR: /app/storage
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./storage:/app/storage
+
+  frontend:
+    profiles: ["fullstack"]
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: jobstep-local-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+
+volumes:
+  jobstep_pgdata:

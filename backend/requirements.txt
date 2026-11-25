@@ -1,0 +1,26 @@
+# ==============================================================================
+# JobStep Local — Backend Requirements (Hardened & Patched Versions - Nov 2026)
+# ==============================================================================
+fastapi>=0.165.0
+starlette>=1.10.0
+uvicorn[standard]>=0.34.0
+pydantic>=2.14.4
+pydantic-settings>=2.8.0
+python-multipart>=0.0.33
+
+# Database (PostgreSQL via Psycopg 3 + SQLite fallback for portable/desktop mode)
+sqlmodel>=0.0.50
+sqlalchemy>=2.0.40
+alembic>=1.20.1
+psycopg[binary,pool]>=3.3.9
+
+# Dual AI Engine (Groq API Default + Ollama Local)
+groq>=1.7.0
+httpx>=0.28.1
+
+# Document Parsing & Hardened Security (Mitigates CVE-2026-120752 & XXE)
+# Note: PyMuPDF>=2.0.0 is abi3-compatible with Python 3.15; we also include pypdf>=5.0.0 & pdfplumber
+pypdf>=5.0.0
+pdfplumber>=0.11.4
+python-docx>=1.2.0
+defusedxml>=0.7.1
