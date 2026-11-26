@@ -7,6 +7,8 @@
 ![TypeScript ^5.9.3](https://img.shields.io/badge/TypeScript-%5E5.9.3-3178C6?style=flat-square&logo=typescript&logoColor=white)
 ![Tailwind CSS ^4.3.5](https://img.shields.io/badge/Tailwind_CSS-%5E4.3.5-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
 ![Sharp >=0.35.5](https://img.shields.io/badge/Sharp-%3E%3D0.35.5-99CC00?style=flat-square)
+![Vitest ^5.1.1](https://img.shields.io/badge/Vitest-%5E5.1.1-6E9F18?style=flat-square&logo=vitest&logoColor=white)
+![axe-core ^4.14.1](https://img.shields.io/badge/axe--core-%5E4.14.1-005A9C?style=flat-square)
 
 Aplicacion web construida con **Next.js 16.4.6 (App Router)**, **React 19.3.1**, **TypeScript** y **Tailwind CSS 4.3.5** para la administracion de la Boveda Profesional Multi-Perfil, compilacion de CVs en Formato Harvard y configuracion en tiempo real del motor de IA dual (Groq / Ollama).
 
@@ -19,41 +21,61 @@ El frontend utiliza **File-System Routing nativo del App Router** combinado con 
 ```text
 frontend/
 ├── Dockerfile                  # Imagen de contenedor basada en node:24-alpine + pnpm
-├── package.json                # Dependencias parchadas (Next 16.4.6, React 19.3.1, Sharp 0.35.5)
+├── package.json                # Dependencias parchadas (Next 16.4.6, React 19.3.1, Vitest 5.1.1, axe-core 4.14.1)
 ├── tsconfig.json               # Configuracion estricta de TypeScript
+├── vitest.config.ts            # Configuracion de Vitest + React Testing Library + JSDOM
 ├── next.config.ts              # Configuracion de Next.js
 ├── postcss.config.mjs          # Integracion con @tailwindcss/postcss v4
 └── src/
     ├── app/                    # Rutas nativas del App Router
     │   ├── layout.tsx          # Layout raiz con <AppShell> persistente
     │   ├── globals.css         # Estilos globales e importacion de Tailwind CSS v4
-    │   ├── page.tsx            # Ruta "/" -> Mi Boveda Profesional Multi-Perfil
+    │   ├── page.tsx            # Ruta "/" -> Mi Boveda Profesional Multi-Perfil Dinamica
     │   ├── harvard-cvs/
-    │   │   └── page.tsx        # Ruta "/harvard-cvs" -> Estudio y Visor de CVs Formato Harvard
+    │   │   └── page.tsx        # Ruta "/harvard-cvs" -> Estudio, Hoja Impresa y Exportador PDF Harvard
+    │   ├── applications/
+    │   │   └── page.tsx        # Ruta "/applications" -> Gestor de Ofertas, Carpetas Locales y Copiloto XYZ
+    │   ├── ats-evaluator/
+    │   │   └── page.tsx        # Ruta "/ats-evaluator" -> Simulador y Evaluador ATS Core (0-100)
     │   ├── best-practices/
-    │   │   └── page.tsx        # Ruta "/best-practices" -> Guia Harvard & ATS actualizable con IA
+    │   │   └── page.tsx        # Ruta "/best-practices" -> Guia Harvard & ATS renderizada como articulo
     │   └── settings/
     │       └── page.tsx        # Ruta "/settings" -> Configuracion Motor IA Dual (Groq / Ollama)
-    ├── components/
+    ├── components/             # Componentes modulares con tests unitarios y axe-core co-ubicados
     │   ├── layout/
-    │   │   ├── AppShell.tsx    # Shell persistente que envuelve Navbar, StatusBanner y <main>
-    │   │   ├── Navbar.tsx      # Navegacion principal con <Link> y aria-current="page"
-    │   │   └── StatusBanner.tsx# Indicadores en vivo del backend, IA activa y base de datos
+    │   │   ├── AppShell.tsx
+    │   │   ├── Navbar.tsx
+    │   │   └── Navbar.test.tsx
     │   ├── vault/
-    │   │   ├── VaultIngestPanel.tsx   # Ingesta de texto libre, subida de archivos y compilacion 1-clic
-    │   │   └── VaultExplorerPanel.tsx # Explorador con filtros por rubro (<search>) y alta manual
+    │   │   ├── VaultIngestPanel.tsx
+    │   │   ├── VaultIngestPanel.test.tsx
+    │   │   ├── VaultExplorerPanel.tsx
+    │   │   └── VaultExplorerPanel.test.tsx
     │   ├── harvard/
-    │   │   └── HarvardCVStudio.tsx    # Compilador personalizado y previsualizador Markdown Harvard
+    │   │   ├── HarvardCVStudio.tsx
+    │   │   └── HarvardCVStudio.test.tsx
+    │   ├── applications/
+    │   │   ├── ApplicationsStudio.tsx
+    │   │   └── ApplicationsStudio.test.tsx
+    │   ├── ats/
+    │   │   ├── ATSEvaluatorStudio.tsx
+    │   │   └── ATSEvaluatorStudio.test.tsx
     │   ├── guide/
-    │   │   └── BestPracticesView.tsx  # Lector y actualizador de la guia local de mejores practicas
+    │   │   ├── BestPracticesView.tsx
+    │   │   └── BestPracticesView.test.tsx
     │   └── settings/
-    │       └── LLMSettingsView.tsx    # Formulario accesible para alternar entre Groq y Ollama
+    │       ├── LLMSettingsView.tsx
+    │       └── LLMSettingsView.test.tsx
     ├── context/
     │   └── StudioContext.tsx   # Proveedor de estado compartido entre rutas del App Router
     ├── lib/
     │   └── api.ts              # Cliente HTTP centralizado y tipado hacia el backend FastAPI
     ├── constants/
-    │   └── domains.ts          # Catalogo de etiquetas por rubro y plantilla de ejemplo multi-perfil
+    │   ├── domains.ts          # Resolucion dinamica de etiquetas por perfil y plantilla de ejemplo
+    │   └── domains.test.ts     # Tests unitarios de resolucion de perfiles dinamicos
+    ├── test/
+    │   ├── setup.ts            # Inicializacion de jest-dom y helper expectNoAxeViolations
+    │   └── fixtures.ts         # Datos mock tipados compartidos entre las suites modulares
     └── types/
         └── studio.ts           # Interfaces TypeScript del dominio
 ```
@@ -100,6 +122,9 @@ pnpm dev
 
 # Verificar tipado estricto TypeScript sin emitir archivos
 pnpm exec tsc --noEmit
+
+# Ejecutar suite de tests unitarios y auditoria de accesibilidad WCAG (Vitest + axe-core)
+pnpm test
 
 # Compilar build de produccion
 pnpm build

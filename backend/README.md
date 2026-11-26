@@ -27,22 +27,32 @@ backend/
 └── app/
     ├── main.py                 # Instancia FastAPI, CORS y ciclo de vida (lifespan)
     ├── api/
-    │   ├── routes_settings.py  # Endpoints de salud, configuracion IA Dual y guia Harvard/ATS
-    │   └── routes_profile.py   # Endpoints de Boveda Maestra, ingesta y compilador Harvard
+    │   ├── routes_settings.py      # Endpoints de salud, configuracion IA Dual y guia Harvard/ATS
+    │   ├── routes_profile.py       # Endpoints de Perfiles Dinamicos, Boveda, ingesta y PDF Harvard
+    │   ├── routes_ats.py           # Endpoints del Evaluador ATS Core (0-100) y Copiloto de Vinetas XYZ
+    │   └── routes_applications.py  # Endpoints de Ofertas Laborales y sincronizacion de carpetas locales
     ├── core/
     │   ├── config.py           # Configuracion central validada con pydantic-settings
-    │   └── database.py         # Motor dual PostgreSQL (Psycopg 3) + fallback SQLite
+    │   └── database.py         # Motor dual PostgreSQL (Psycopg 3) + fallback SQLite y semilla de perfiles
     ├── models/
-    │   └── entities.py         # Modelos SQLModel (AppSetting, MasterProfileItem, CVVariant, JobApplication, BestPracticeGuide)
+    │   └── entities.py         # Modelos SQLModel (AppSetting, CareerProfile, MasterProfileItem, CVVariant, JobApplication, BestPracticeGuide)
     ├── schemas/
     │   ├── settings.py         # Contratos Pydantic con extra="forbid" para configuracion IA
-    │   └── profile.py          # Contratos Pydantic para items de boveda e ingesta
+    │   ├── profile.py          # Contratos Pydantic para perfiles dinamicos, boveda e ingesta
+    │   ├── ats.py              # Contratos Pydantic para reporte ATS de 4 pilares y reescritura XYZ
+    │   └── applications.py     # Contratos Pydantic para ofertas laborales y archivos en disco
     └── services/
         ├── llm/
         │   └── provider.py     # Strategy Pattern para Groq API y Ollama Local con proteccion anti-SSRF
-        └── profile/
-            ├── document_extractor.py  # Validador de magic bytes y extractor PDF/DOCX/MD/TXT
-            └── harvard_builder.py     # Estructurador IA/heuristico y compilador Markdown Harvard
+        ├── profile/
+        │   ├── document_extractor.py  # Validador de magic bytes y extractor PDF/DOCX/MD/TXT
+        │   ├── harvard_builder.py     # Estructurador multi-perfil dinamico y compilador Markdown Harvard
+        │   └── pdf_exporter.py        # Compilador vectorial PDF 100% ATS-Friendly con PyMuPDF Story
+        ├── ats/
+        │   ├── evaluator.py           # Calculador determinista ATS Score (0-100) y cruce de keywords
+        │   └── rewriter.py            # Copiloto de reescritura vineta por vineta (Metodo Google XYZ / STAR)
+        └── applications/
+            └── folder_manager.py      # Sincronizador DB <-> storage/applications/YYYY-MM-DD_Empresa_Cargo/
 ```
 
 ---

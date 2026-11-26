@@ -11,6 +11,8 @@
 ![Next.js ^16.4.6](https://img.shields.io/badge/Next.js-%5E16.4.6-000000?style=flat-square&logo=nextdotjs&logoColor=white)
 ![React ^19.3.1](https://img.shields.io/badge/React-%5E19.3.1-61DAFB?style=flat-square&logo=react&logoColor=black)
 ![Tailwind CSS ^4.3.5](https://img.shields.io/badge/Tailwind_CSS-%5E4.3.5-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
+![Vitest ^5.1.1](https://img.shields.io/badge/Vitest-%5E5.1.1-6E9F18?style=flat-square&logo=vitest&logoColor=white)
+![axe-core ^4.14.1](https://img.shields.io/badge/axe--core-%5E4.14.1-005A9C?style=flat-square)
 ![Groq SDK >=1.7.0](https://img.shields.io/badge/Groq_SDK-%3E%3D1.7.0-F55036?style=flat-square)
 ![Ollama Local](https://img.shields.io/badge/Ollama-Local_LLM-111827?style=flat-square)
 
@@ -39,7 +41,8 @@ Todas las dependencias estan fijadas en versiones parchadas frente a vulnerabili
 | **Validacion** | Pydantic / pydantic-settings | `>=2.14.4` / `>=2.8.0` | Validacion estricta (`extra="forbid"`) y esquemas JSON. |
 | **ORM & DB** | SQLModel / SQLAlchemy / Alembic | `>=0.0.50` / `>=2.0.40` / `>=1.20.1` | Persistencia dual PostgreSQL (`psycopg >=3.3.9`) y SQLite. |
 | **Motor IA** | Groq SDK / HTTPX (Ollama) | `>=1.7.0` / `>=0.28.1` | Inferencia estructurada con `llama-3.3-70b-versatile` o modelos locales. |
-| **Documentos** | PyMuPDF / python-docx / defusedxml | `>=2.0.0` / `>=1.2.0` / `>=0.7.1` | Auditoria geometrica de PDFs y extraccion DOCX protegida contra XXE. |
+| **Documentos** | PyMuPDF / python-docx / defusedxml | `>=2.0.0` / `>=1.2.0` / `>=0.7.1` | Auditoria geometrica de PDFs, exportacion PDF Harvard y extraccion DOCX anti-XXE. |
+| **QA & Testing** | Vitest / Testing Library / axe-core | `^5.1.1` / `^16.3.3` / `^4.14.1` | Tests unitarios modulares co-ubicados y auditoria automatizada de accesibilidad WCAG. |
 
 ---
 
@@ -142,3 +145,4 @@ docker compose --profile fullstack up --build -d
   - [01 - Scope Inicial y Arquitectura del Sistema](docs/01-scope-inicial-y-arquitectura.md)
   - [02 - Plan de Implementacion y Roadmap](docs/02-plan-de-implementacion-y-roadmap.md)
   - [03 - Estrategia de Distribucion: pgAdmin Local, Docker y Ejecutable Desktop](docs/03-estrategia-distribucion-docker-y-ejecutable.md)
+  - [04 - Implementaciones Adicionales y Diagnostico Integral de Testing](docs/04-implementaciones-adicionales-y-diagnostico-testing.md)
