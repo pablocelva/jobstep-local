@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import Response
 from sqlmodel import Session, select
 
 from app.core.config import settings
@@ -31,6 +32,7 @@ from app.services.applications.folder_manager import (
     sync_application_folder_on_disk,
 )
 from app.services.ats.evaluator import evaluate_cv_ats
+from app.services.profile.pdf_exporter import compile_harvard_markdown_to_pdf_bytes
 
 router = APIRouter(
     prefix="/api/applications",
@@ -192,3 +194,35 @@ def delete_job_application(
     session.delete(record)
     session.commit()
     return {"ok": True, "deleted_id": app_id}
+
+
+@router.get("/{app_id}/export-pdf")
+def export_application_pdf(
+    app_id: int,
+    session: Session = Depends(get_session),
+) -> Response:
+    """
+    Compila (o actualiza) `04_cv_adaptado_ATS.pdf` dentro de la carpeta local de la oferta laboral
+    y devuelve el PDF binario 100% ATS-Friendly listo para descargar o enviar.
+    """
+    record = session.get(JobApplication, app_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="Oferta laboral no encontrada.")
+
+    disk_bundle = read_application_disk_bundle(record)
+    cv_md = disk_bundle["adapted_cv_markdown"] or "# CV Formato Harvard"
+    folder = Path(record.folder_path)
+    pdf_path = folder / "04_cv_adaptado_ATS.pdf"
+
+    pdf_bytes = compile_harvard_markdown_to_pdf_bytes(
+        markdown_text=cv_md,
+        output_file_path=pdf_path,
+    )
+    download_name = f"CV_{record.folder_slug}_ATS.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{download_name}"',
+        },
+    )

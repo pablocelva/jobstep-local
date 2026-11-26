@@ -21,6 +21,7 @@ from app.core.config import settings
 from app.models.entities import JobApplication
 from app.services.ats.evaluator import detect_language, evaluate_cv_ats, extract_job_keywords_and_match
 from app.services.profile.harvard_builder import build_harvard_cv_variant
+from app.services.profile.pdf_exporter import compile_harvard_markdown_to_pdf_bytes
 
 
 def sanitize_folder_segment(text: str) -> str:
@@ -220,6 +221,10 @@ def sync_application_folder_on_disk(
     (folder / "01_oferta_laboral.md").write_text(oferta_md, encoding="utf-8")
     (folder / "02_evaluacion_ats.md").write_text(eval_md, encoding="utf-8")
     (folder / "03_cv_adaptado.md").write_text(adapted_cv_markdown.strip() + "\n", encoding="utf-8")
+    compile_harvard_markdown_to_pdf_bytes(
+        markdown_text=adapted_cv_markdown,
+        output_file_path=folder / "04_cv_adaptado_ATS.pdf",
+    )
     (folder / "05_carta_presentacion.md").write_text(cover_letter_markdown.strip() + "\n", encoding="utf-8")
 
     metadata_payload = {

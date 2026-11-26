@@ -95,14 +95,16 @@ backend/
 | `POST` | `/api/profile/ingest/file` | Recibe un archivo `PDF`, `DOCX`, `MD` o `TXT`, lo respalda en `storage/master_profile/uploaded_cvs/` y estructura su contenido en la Boveda. |
 | `GET` | `/api/profile/cv-variants` | Lista todas las variantes de CV en Formato Harvard generadas. |
 | `POST` | `/api/profile/cv-variants/generate-harvard` | Compila bajo demanda un CV en Formato Harvard filtrando la Boveda por perfil (`ti-fullstack`, `customer-service`, `creative-media`, `hybrid`). |
+| `GET` | `/api/profile/cv-variants/{variant_id}/export-pdf` | Compila y descarga la variante de CV Harvard en PDF 100% ATS-Friendly con `PyMuPDF Story`. |
 | `DELETE` | `/api/profile/cv-variants/{variant_id}` | Elimina una variante de CV registrada. |
 
-### 3.3 Motor Evaluador ATS Core (`/api/ats`)
+### 3.3 Motor Evaluador ATS Core & Copiloto XYZ (`/api/ats`)
 
 | Metodo | Ruta | Descripcion |
 | :--- | :--- | :--- |
 | `POST` | `/api/ats/evaluate` | Evalua un CV (`cv_variant_id` o `cv_text`) contra los 4 pilares deterministas ATS y una oferta laboral opcional (`job_description`). |
 | `POST` | `/api/ats/evaluate-file` | Audita geometricamente un archivo `PDF`, `DOCX`, `MD` o `TXT` (columnas, tablas, contacto, vinetas XYZ) y calcula el Score ATS 0-100. |
+| `POST` | `/api/ats/rewrite-bullet` | Copiloto de reescritura vineta por vineta: genera 3 propuestas Harvard / Google XYZ inyectando keywords faltantes de la oferta. |
 
 ### 3.4 Gestor de Ofertas Laborales y Carpetas Locales (`/api/applications`)
 
@@ -110,8 +112,9 @@ backend/
 | :--- | :--- | :--- |
 | `GET` | `/api/applications` | Lista todas las ofertas laborales registradas junto con los archivos fisicos de su carpeta local. |
 | `GET` | `/api/applications/{app_id}` | Obtiene el detalle de una oferta laboral y el contenido de sus archivos Markdown en disco. |
-| `POST` | `/api/applications` | Registra una oferta laboral, recomienda el perfil optimo, compila el CV Harvard adaptado, evalua el Score ATS y crea `storage/applications/YYYY-MM-DD_Empresa_Cargo/`. |
-| `PUT` | `/api/applications/{app_id}` | Actualiza el estado de postulacion, sincroniza cambios en `03_cv_adaptado.md` / `05_carta_presentacion.md` y recalcula el ATS Score. |
+| `POST` | `/api/applications` | Registra una oferta laboral, recomienda el perfil optimo, compila el CV Harvard adaptado, evalua el Score ATS y crea `storage/applications/YYYY-MM-DD_Empresa_Cargo/` (incluyendo `04_cv_adaptado_ATS.pdf`). |
+| `PUT` | `/api/applications/{app_id}` | Actualiza el estado de postulacion, sincroniza cambios en `03_cv_adaptado.md`, `04_cv_adaptado_ATS.pdf` y `05_carta_presentacion.md` y recalcula el ATS Score. |
+| `GET` | `/api/applications/{app_id}/export-pdf` | Descarga directamente el archivo `04_cv_adaptado_ATS.pdf` de la carpeta local de la oferta. |
 | `DELETE` | `/api/applications/{app_id}` | Elimina la oferta laboral de la base de datos y opcionalmente remueve su carpeta local. |
 
 ---

@@ -1,8 +1,16 @@
 "use client";
 
 import React, { useState } from "react";
-import { evaluateCVATSRequest, evaluateFileATSRequest } from "@/lib/api";
-import type { ATSEvaluationResponse, CVVariant } from "@/types/studio";
+import {
+  evaluateCVATSRequest,
+  evaluateFileATSRequest,
+  rewriteBulletCopilotRequest,
+} from "@/lib/api";
+import type {
+  ATSEvaluationResponse,
+  BulletRewriteSuggestion,
+  CVVariant,
+} from "@/types/studio";
 
 interface ATSEvaluatorStudioProps {
   cvVariants: CVVariant[];
@@ -36,6 +44,31 @@ export function ATSEvaluatorStudio({
   const [evaluating, setEvaluating] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
   const [report, setReport] = useState<ATSEvaluationResponse | null>(null);
+
+  // Copiloto de Reescritura por Viñeta
+  const [rewritingIdx, setRewritingIdx] = useState<number | null>(null);
+  const [bulletSuggestions, setBulletSuggestions] = useState<
+    Record<number, BulletRewriteSuggestion[]>
+  >({});
+  const [copiedSuggestion, setCopiedSuggestion] = useState<string>("");
+
+  const handleRewriteBullet = async (idx: number, bulletText: string) => {
+    setRewritingIdx(idx);
+    try {
+      const missingKws = report?.job_match?.missing_keywords || [];
+      const roleCtx = report?.job_match?.detected_role || "Formato Harvard";
+      const lang = (report?.language_detected as "es" | "en") || "es";
+      const res = await rewriteBulletCopilotRequest({
+        original_bullet: bulletText,
+        target_keywords: missingKws,
+        role_context: roleCtx,
+        language: lang,
+      });
+      setBulletSuggestions((prev) => ({ ...prev, [idx]: res.suggestions }));
+    } finally {
+      setRewritingIdx(null);
+    }
+  };
 
   const handleRunEvaluation = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -467,10 +500,11 @@ export function ATSEvaluatorStudio({
                 <ul role="list" className="space-y-2 max-h-96 overflow-y-auto pr-1">
                   {report.bullet_audit.map((b, idx) => {
                     const badge = bulletBadge(b.status);
+                    const suggestions = bulletSuggestions[idx] || [];
                     return (
                       <li
                         key={idx}
-                        className="p-3.5 rounded-lg border border-zinc-800/80 bg-zinc-950/70 space-y-1.5"
+                        className="p-3.5 rounded-lg border border-zinc-800/80 bg-zinc-950/70 space-y-2"
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span
@@ -479,14 +513,65 @@ export function ATSEvaluatorStudio({
                             <span className={`h-1.5 w-1.5 rounded-full ${badge.dot}`} />
                             {badge.label}
                           </span>
-                          <span className="text-[11px] text-zinc-500 font-mono">
-                            {b.word_count} palabras
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] text-zinc-500 font-mono">
+                              {b.word_count} palabras
+                            </span>
+                            <button
+                              type="button"
+                              disabled={rewritingIdx === idx}
+                              onClick={() => handleRewriteBullet(idx, b.text)}
+                              className="px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-[11px] font-medium text-zinc-100 border border-zinc-700 transition-colors disabled:opacity-50"
+                            >
+                              {rewritingIdx === idx
+                                ? "Generando XYZ..."
+                                : "Reescribir con Copiloto XYZ"}
+                            </button>
+                          </div>
                         </div>
                         <p className="text-xs text-zinc-200 leading-relaxed">
                           {b.text}
                         </p>
                         <p className="text-[11px] text-zinc-400">{b.feedback}</p>
+
+                        {suggestions.length > 0 && (
+                          <div className="pt-2 mt-2 border-t border-zinc-800/80 space-y-2">
+                            <p className="text-[11px] font-semibold text-zinc-300">
+                              Propuestas del Copiloto Harvard / Google XYZ:
+                            </p>
+                            {suggestions.map((sug, sIdx) => (
+                              <div
+                                key={sIdx}
+                                className="p-2.5 rounded-md border border-zinc-800 bg-zinc-900/80 space-y-1"
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="text-[10px] font-mono text-emerald-300">
+                                    {sug.style}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(`- ${sug.text}`);
+                                      setCopiedSuggestion(`${idx}-${sIdx}`);
+                                      setTimeout(() => setCopiedSuggestion(""), 1800);
+                                    }}
+                                    className="text-[10px] px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200"
+                                  >
+                                    {copiedSuggestion === `${idx}-${sIdx}`
+                                      ? "Copiada"
+                                      : "Copiar viñeta"}
+                                  </button>
+                                </div>
+                                <p className="text-xs text-zinc-100 leading-relaxed">
+                                  - {sug.text}
+                                </p>
+                                <p className="text-[10px] text-zinc-400">
+                                  {sug.rationale}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </li>
                     );
                   })}

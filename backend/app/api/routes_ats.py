@@ -14,8 +14,14 @@ from sqlmodel import Session
 
 from app.core.database import get_session
 from app.models.entities import CVVariant
-from app.schemas.ats import ATSEvaluationRequest, ATSEvaluationResponse
+from app.schemas.ats import (
+    ATSEvaluationRequest,
+    ATSEvaluationResponse,
+    BulletRewriteRequest,
+    BulletRewriteResponse,
+)
 from app.services.ats.evaluator import evaluate_cv_ats
+from app.services.ats.rewriter import suggest_bullet_rewrites
 from app.services.profile.document_extractor import validate_and_extract_document
 
 router = APIRouter(prefix="/api/ats", tags=["ATS Core Evaluator Engine (Phase 3)"])
@@ -93,4 +99,23 @@ async def evaluate_uploaded_file_endpoint(
         job_description=job_description,
         language=language,
         document_metadata=extracted["metadata"],
+    )
+
+
+@router.post("/rewrite-bullet", response_model=BulletRewriteResponse)
+async def rewrite_bullet_endpoint(
+    payload: BulletRewriteRequest,
+    session: Session = Depends(get_session),
+) -> Any:
+    """
+    Copiloto Interactivo de Reescritura Viñeta por Viñeta (Fase 5):
+    Toma una viñeta débil o sin métricas y devuelve 3 propuestas redactadas bajo el Formato Harvard
+    (Método Google XYZ / STAR) integrando las keywords faltantes de la oferta laboral.
+    """
+    return await suggest_bullet_rewrites(
+        session=session,
+        original_bullet=payload.original_bullet,
+        target_keywords=payload.target_keywords,
+        role_context=payload.role_context,
+        language=payload.language,
     )

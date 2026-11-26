@@ -4,10 +4,13 @@ import React, { useEffect, useState } from "react";
 import {
   createJobApplicationRequest,
   deleteJobApplicationRequest,
+  getApplicationPdfExportUrl,
+  rewriteBulletCopilotRequest,
   updateJobApplicationRequest,
 } from "@/lib/api";
 import type {
   ApplicationStatus,
+  BulletRewriteSuggestion,
   CareerProfile,
   JobApplication,
 } from "@/types/studio";
@@ -62,12 +65,20 @@ export function ApplicationsStudio({
 
   // Pestaña activa del Inspector de Carpeta Local
   const [activeDocTab, setActiveDocTab] = useState<
-    "cv_paper" | "cv_edit" | "ats_report" | "oferta_md" | "cover_letter"
+    "cv_paper" | "copilot" | "cv_edit" | "ats_report" | "oferta_md" | "cover_letter"
   >("cv_paper");
   const [editableCV, setEditableCV] = useState<string>("");
   const [editableCoverLetter, setEditableCoverLetter] = useState<string>("");
   const [savingChanges, setSavingChanges] = useState<boolean>(false);
   const [saveBanner, setSaveBanner] = useState<string>("");
+
+  // Copiloto de Reescritura Viñeta por Viñeta dentro de la Oferta Laboral
+  const [rewritingBulletIdx, setRewritingBulletIdx] = useState<number | null>(
+    null
+  );
+  const [copilotSuggestions, setCopilotSuggestions] = useState<
+    Record<number, BulletRewriteSuggestion[]>
+  >({});
 
   useEffect(() => {
     if (applications.length > 0) {
@@ -86,7 +97,57 @@ export function ApplicationsStudio({
     setSelectedApp(app);
     setEditableCV(app.adapted_cv_markdown || "");
     setEditableCoverLetter(app.cover_letter_markdown || "");
+    setCopilotSuggestions({});
     setSaveBanner("");
+  };
+
+  const handleAskCopilotForBullet = async (idx: number, bulletText: string) => {
+    if (!selectedApp) return;
+    setRewritingBulletIdx(idx);
+    try {
+      const missingKws =
+        selectedApp.extracted_requirements?.missing_keywords || [];
+      const res = await rewriteBulletCopilotRequest({
+        original_bullet: bulletText,
+        target_keywords: missingKws,
+        role_context: `${selectedApp.role_title} en ${selectedApp.company_name}`,
+        language: (selectedApp.language as "es" | "en") || "es",
+      });
+      setCopilotSuggestions((prev) => ({ ...prev, [idx]: res.suggestions }));
+    } finally {
+      setRewritingBulletIdx(null);
+    }
+  };
+
+  const handleApplySuggestionToCV = async (
+    originalBullet: string,
+    newBulletText: string
+  ) => {
+    if (!selectedApp) return;
+    const updatedMarkdown = editableCV.includes(originalBullet)
+      ? editableCV.replace(originalBullet, newBulletText)
+      : `${editableCV.trim()}\n- ${newBulletText}\n`;
+
+    setEditableCV(updatedMarkdown);
+    setSavingChanges(true);
+    setSaveBanner(
+      "Aplicando viñeta en 03_cv_adaptado.md, compilando 04_cv_adaptado_ATS.pdf y recalculando Score ATS..."
+    );
+    try {
+      const updated = await updateJobApplicationRequest(selectedApp.id, {
+        adapted_cv_markdown: updatedMarkdown,
+        cover_letter_markdown: editableCoverLetter,
+        re_evaluate_ats: true,
+      });
+      await onDataChanged();
+      setSelectedApp(updated);
+      setEditableCV(updated.adapted_cv_markdown || updatedMarkdown);
+      setSaveBanner(
+        `Viñeta aplicada y sincronizada en disco · Nuevo Score ATS: ${updated.ats_score}/100`
+      );
+    } finally {
+      setSavingChanges(false);
+    }
   };
 
   const handleCreateApplication = async (e: React.FormEvent) => {
@@ -547,11 +608,12 @@ export function ApplicationsStudio({
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-3">
                   <div className="inline-flex flex-wrap rounded-lg border border-zinc-800 bg-zinc-950 p-0.5 gap-0.5">
                     {[
-                      { id: "cv_paper", label: "Vista Hoja CV Harvard" },
-                      { id: "cv_edit", label: "03_cv_adaptado.md (Editar)" },
+                      { id: "cv_paper", label: "Vista Hoja CV" },
+                      { id: "copilot", label: "Copiloto Viñetas XYZ" },
+                      { id: "cv_edit", label: "03_cv_adaptado.md" },
                       { id: "ats_report", label: "02_evaluacion_ats.md" },
                       { id: "oferta_md", label: "01_oferta_laboral.md" },
-                      { id: "cover_letter", label: "05_carta_presentacion.md" },
+                      { id: "cover_letter", label: "05_carta.md" },
                     ].map((tab) => (
                       <button
                         key={tab.id}
@@ -560,6 +622,7 @@ export function ApplicationsStudio({
                           setActiveDocTab(
                             tab.id as
                               | "cv_paper"
+                              | "copilot"
                               | "cv_edit"
                               | "ats_report"
                               | "oferta_md"
@@ -577,16 +640,25 @@ export function ApplicationsStudio({
                     ))}
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={handleSaveDiskDocuments}
-                    disabled={savingChanges}
-                    className="px-3.5 py-1.5 rounded-lg bg-zinc-100 text-zinc-950 font-semibold text-xs hover:bg-white transition-colors disabled:opacity-50"
-                  >
-                    {savingChanges
-                      ? "Guardando y Recalculando..."
-                      : "Guardar en Disco & Re-Evaluar ATS"}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSaveDiskDocuments}
+                      disabled={savingChanges}
+                      className="px-3 py-1.5 rounded-lg border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 font-medium text-xs transition-colors disabled:opacity-50"
+                    >
+                      {savingChanges
+                        ? "Sincronizando..."
+                        : "Guardar & Re-Evaluar"}
+                    </button>
+                    <a
+                      href={getApplicationPdfExportUrl(selectedApp.id)}
+                      download
+                      className="px-3.5 py-1.5 rounded-lg bg-zinc-100 text-zinc-950 font-semibold text-xs hover:bg-white transition-colors"
+                    >
+                      Descargar PDF ATS
+                    </a>
+                  </div>
                 </div>
 
                 {saveBanner && (
@@ -603,6 +675,106 @@ export function ApplicationsStudio({
                 {activeDocTab === "cv_paper" && (
                   <div className="bg-[#fcfcfb] text-zinc-900 rounded-lg shadow-2xl border border-zinc-300 p-8 sm:p-10 max-w-3xl mx-auto font-serif space-y-1">
                     {renderHarvardPaper(editableCV)}
+                  </div>
+                )}
+
+                {activeDocTab === "copilot" && (
+                  <div className="space-y-3">
+                    <div className="p-3.5 rounded-lg border border-zinc-800 bg-zinc-950/90 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <h3 className="text-xs font-semibold text-zinc-100">
+                          Copiloto Interactivo Viñeta por Viñeta (Método Google XYZ / STAR)
+                        </h3>
+                        <p className="text-[11px] text-zinc-400 mt-0.5">
+                          Inyecta keywords faltantes (
+                          {selectedApp.extracted_requirements?.missing_keywords
+                            ?.slice(0, 5)
+                            .join(", ") || "ninguna faltante"}
+                          ) en tus viñetas reales y aplícalas en 1 clic a{" "}
+                          <code className="text-zinc-200">03_cv_adaptado.md</code> y{" "}
+                          <code className="text-zinc-200">04_cv_adaptado_ATS.pdf</code>.
+                        </p>
+                      </div>
+                    </div>
+
+                    {(selectedApp.ats_report?.bullet_audit || []).length === 0 ? (
+                      <p className="text-xs text-zinc-400 py-8 text-center">
+                        No se encontraron viñetas en el CV actual.
+                      </p>
+                    ) : (
+                      <ul role="list" className="space-y-2.5">
+                        {selectedApp.ats_report.bullet_audit.map((b, idx) => {
+                          const suggestions = copilotSuggestions[idx] || [];
+                          return (
+                            <li
+                              key={idx}
+                              className="p-4 rounded-lg border border-zinc-800 bg-zinc-950/70 space-y-2"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-300">
+                                  Estado: {b.status} · {b.word_count} palabras
+                                </span>
+                                <button
+                                  type="button"
+                                  disabled={rewritingBulletIdx === idx}
+                                  onClick={() =>
+                                    handleAskCopilotForBullet(idx, b.text)
+                                  }
+                                  className="px-3 py-1 rounded-md bg-zinc-100 text-zinc-950 font-semibold text-xs hover:bg-white transition-colors disabled:opacity-50"
+                                >
+                                  {rewritingBulletIdx === idx
+                                    ? "Generando 3 opciones XYZ..."
+                                    : "Sugerir 3 Reescrituras XYZ"}
+                                </button>
+                              </div>
+
+                              <p className="text-xs text-zinc-100 leading-relaxed">
+                                {b.text}
+                              </p>
+                              <p className="text-[11px] text-zinc-400">
+                                {b.feedback}
+                              </p>
+
+                              {suggestions.length > 0 && (
+                                <div className="pt-2.5 mt-2 border-t border-zinc-800 space-y-2">
+                                  {suggestions.map((sug, sIdx) => (
+                                    <div
+                                      key={sIdx}
+                                      className="p-3 rounded-lg border border-zinc-800 bg-zinc-900/80 space-y-1.5"
+                                    >
+                                      <div className="flex items-center justify-between gap-2">
+                                        <span className="text-[11px] font-mono text-emerald-300">
+                                          {sug.style}
+                                        </span>
+                                        <button
+                                          type="button"
+                                          disabled={savingChanges}
+                                          onClick={() =>
+                                            handleApplySuggestionToCV(
+                                              b.text,
+                                              sug.text
+                                            )
+                                          }
+                                          className="px-2.5 py-1 rounded bg-zinc-100 text-zinc-950 font-semibold text-[11px] hover:bg-white transition-colors"
+                                        >
+                                          Aplicar en CV & Recalcular ATS
+                                        </button>
+                                      </div>
+                                      <p className="text-xs text-zinc-100 leading-relaxed">
+                                        - {sug.text}
+                                      </p>
+                                      <p className="text-[11px] text-zinc-400">
+                                        {sug.rationale}
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
                   </div>
                 )}
 

@@ -2,6 +2,7 @@ import type {
   ATSEvaluationResponse,
   ApplicationStatus,
   BestPracticesData,
+  BulletRewriteResponse,
   CVVariant,
   CareerProfile,
   JobApplication,
@@ -304,4 +305,30 @@ export async function deleteJobApplicationRequest(appId: number) {
   await fetch(`${API_BASE}/api/applications/${appId}?remove_disk_folder=true`, {
     method: "DELETE",
   });
+}
+
+export async function rewriteBulletCopilotRequest(payload: {
+  original_bullet: string;
+  target_keywords?: string[];
+  role_context?: string | null;
+  language?: "es" | "en";
+}): Promise<BulletRewriteResponse> {
+  const res = await fetch(`${API_BASE}/api/ats/rewrite-bullet`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.detail || "No se pudieron generar sugerencias de reescritura.");
+  }
+  return data as BulletRewriteResponse;
+}
+
+export function getApplicationPdfExportUrl(appId: number): string {
+  return `${API_BASE}/api/applications/${appId}/export-pdf`;
+}
+
+export function getCVVariantPdfExportUrl(variantId: number): string {
+  return `${API_BASE}/api/profile/cv-variants/${variantId}/export-pdf`;
 }

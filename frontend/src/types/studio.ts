@@ -174,3 +174,16 @@ export interface JobApplication {
   created_at: string;
   updated_at: string;
 }
+
+export interface BulletRewriteSuggestion {
+  style: string;
+  text: string;
+  rationale: string;
+}
+
+export interface BulletRewriteResponse {
+  original_bullet: string;
+  used_ai: boolean;
+  provider_used: string;
+  suggestions: BulletRewriteSuggestion[];
+}

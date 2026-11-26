@@ -67,3 +67,30 @@ class ATSEvaluationResponse(BaseModel):
     bullet_stats: dict[str, Any]
     job_match: Optional[KeywordMatchSummary] = None
     top_recommendations: list[str]
+
+
+class BulletRewriteRequest(StrictBaseModel):
+    original_bullet: str = Field(
+        min_length=4,
+        max_length=1200,
+        description="Viñeta original que se desea optimizar con el método Harvard / Google XYZ.",
+    )
+    target_keywords: list[str] = Field(
+        default_factory=list,
+        description="Keywords faltantes de la oferta laboral para integrar naturalmente.",
+    )
+    role_context: Optional[str] = Field(default=None, max_length=250)
+    language: Literal["es", "en"] = Field(default="es")
+
+
+class BulletRewriteSuggestion(BaseModel):
+    style: str
+    text: str
+    rationale: str
+
+
+class BulletRewriteResponse(BaseModel):
+    original_bullet: str
+    used_ai: bool
+    provider_used: str
+    suggestions: list[BulletRewriteSuggestion]

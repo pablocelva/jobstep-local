@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { getCVVariantPdfExportUrl } from "@/lib/api";
 import type { CVVariant, CareerProfile, TargetDomain } from "@/types/studio";
 
 interface HarvardCVStudioProps {
@@ -301,6 +302,13 @@ export function HarvardCVStudio({
                   >
                     {copied ? "Copiado" : "Copiar MD"}
                   </button>
+                  <a
+                    href={getCVVariantPdfExportUrl(selectedCV.id)}
+                    download
+                    className="px-3 py-1.5 rounded-lg bg-zinc-100 text-zinc-950 hover:bg-white text-xs font-semibold transition-colors"
+                  >
+                    Exportar PDF ATS
+                  </a>
                 </div>
               </div>
 

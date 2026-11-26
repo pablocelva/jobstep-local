@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi.responses import Response
 from sqlmodel import Session, select
 
 from app.core.config import settings
@@ -32,9 +33,11 @@ from app.services.profile.harvard_builder import (
     build_harvard_cv_variant,
     ensure_career_profile_exists,
     ingest_raw_text_to_vault,
+    slugify_name,
     slugify_tag,
     sync_master_vault_json,
 )
+from app.services.profile.pdf_exporter import compile_harvard_markdown_to_pdf_bytes
 
 router = APIRouter(prefix="/api/profile", tags=["Dynamic Career Profiles, Vault & Harvard CV Builder"])
 
@@ -326,3 +329,35 @@ def delete_cv_variant(
     session.delete(variant)
     session.commit()
     return {"ok": True, "deleted_id": variant_id}
+
+
+@router.get("/cv-variants/{variant_id}/export-pdf")
+def export_cv_variant_pdf(
+    variant_id: int,
+    session: Session = Depends(get_session),
+) -> Response:
+    """
+    Compila una variante de CV Harvard en PDF 100% ATS-Friendly, guarda una copia `.pdf` junto
+    al archivo `.md` en `storage/master_profile/` y lo descarga en el navegador.
+    """
+    variant = session.get(CVVariant, variant_id)
+    if not variant:
+        raise HTTPException(status_code=404, detail="Variante de CV no encontrada.")
+
+    pdf_file_path = None
+    if variant.file_path:
+        md_path = Path(variant.file_path)
+        pdf_file_path = md_path.with_suffix(".pdf")
+
+    pdf_bytes = compile_harvard_markdown_to_pdf_bytes(
+        markdown_text=variant.markdown_content,
+        output_file_path=pdf_file_path,
+    )
+    safe_name = f"{slugify_name(variant.name)}_ATS.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{safe_name}"',
+        },
+    )
