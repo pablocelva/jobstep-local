@@ -137,3 +137,40 @@ export interface ATSEvaluationResponse {
   job_match: KeywordMatchSummary | null;
   top_recommendations: string[];
 }
+
+export type ApplicationStatus =
+  | "draft"
+  | "ready"
+  | "applied"
+  | "interview"
+  | "offer"
+  | "rejected";
+
+export interface ApplicationFileEntry {
+  filename: string;
+  relative_path: string;
+  size_bytes: number;
+}
+
+export interface JobApplication {
+  id: number;
+  company_name: string;
+  role_title: string;
+  detected_domain: string;
+  status: ApplicationStatus;
+  job_url: string | null;
+  language: string;
+  raw_job_description: string;
+  extracted_requirements: KeywordMatchSummary;
+  ats_score: number | null;
+  ats_report: ATSEvaluationResponse;
+  folder_slug: string;
+  folder_path: string;
+  selected_cv_variant_id: number | null;
+  adapted_cv_markdown: string;
+  cover_letter_markdown: string;
+  evaluacion_ats_markdown: string;
+  files_on_disk: ApplicationFileEntry[];
+  created_at: string;
+  updated_at: string;
+}

@@ -65,7 +65,8 @@ frontend/
 | Ruta URL | Archivo | Responsabilidad Principal |
 | :--- | :--- | :--- |
 | `/` | `src/app/page.tsx` | Alimentacion de la Boveda (texto libre o archivos `PDF`/`DOCX`/`MD`/`TXT`), inscripcion de perfiles laborales dinamicos y exploracion filtrada. |
-| `/harvard-cvs` | `src/app/harvard-cvs/page.tsx` | Generacion personalizada de variantes de CV en Formato Harvard, listado de archivos guardados en `/storage` y copia directa del Markdown. |
+| `/harvard-cvs` | `src/app/harvard-cvs/page.tsx` | Generacion personalizada de variantes de CV en Formato Harvard, vista de hoja impresa y copia de Markdown. |
+| `/applications` | `src/app/applications/page.tsx` | Gestor de ofertas laborales sincronizado con carpetas locales (`storage/applications/YYYY-MM-DD_Empresa_Cargo/`), edicion de CV/Carta y re-evaluacion ATS. |
 | `/ats-evaluator` | `src/app/ats-evaluator/page.tsx` | Simulador y Evaluador ATS Core (0-100) con desglose de los 4 pilares ponderados, cruce de keywords frente a ofertas y auditoria vineta por vineta. |
 | `/best-practices` | `src/app/best-practices/page.tsx` | Visualizacion de la Guia Maestra de Formato Harvard & ATS y sincronizacion bajo demanda mediante Groq/Ollama. |
 | `/settings` | `src/app/settings/page.tsx` | Seleccion de proveedor IA (`Groq Cloud API` vs `Ollama Local`), gestion de API Key, modelos y prueba de latencia en vivo. |

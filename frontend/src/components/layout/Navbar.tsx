@@ -8,16 +8,24 @@ import type { LLMSettings } from "@/types/studio";
 interface NavbarProps {
   vaultCount: number;
   cvCount: number;
+  appCount: number;
   apiOnline: boolean;
   settings: LLMSettings | null;
 }
 
-export function Navbar({ vaultCount, cvCount, apiOnline, settings }: NavbarProps) {
+export function Navbar({
+  vaultCount,
+  cvCount,
+  appCount,
+  apiOnline,
+  settings,
+}: NavbarProps) {
   const pathname = usePathname();
 
   const navItems = [
     { href: "/", label: "Bóveda", count: vaultCount },
     { href: "/harvard-cvs", label: "CVs Harvard", count: cvCount },
+    { href: "/applications", label: "Ofertas", count: appCount },
     { href: "/ats-evaluator", label: "Evaluador ATS" },
     { href: "/best-practices", label: "Guía Harvard" },
     { href: "/settings", label: "Configuración" },
@@ -30,12 +38,11 @@ export function Navbar({ vaultCount, cvCount, apiOnline, settings }: NavbarProps
 
   return (
     <header className="sticky top-0 z-30 border-b border-zinc-800/80 bg-[#09090b]/90 backdrop-blur-md">
-      <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between gap-6">
-        {/* Left: Compact Brand + Primary Navigation */}
-        <div className="flex items-center gap-6">
+      <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-5">
           <Link
             href="/"
-            className="flex items-center gap-2.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300 rounded"
+            className="flex items-center gap-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300 rounded shrink-0"
           >
             <span
               aria-hidden="true"
@@ -63,7 +70,7 @@ export function Navbar({ vaultCount, cvCount, apiOnline, settings }: NavbarProps
                     <Link
                       href={item.href}
                       aria-current={isCurrent ? "page" : undefined}
-                      className="relative inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 aria-[current=page]:text-zinc-100 aria-[current=page]:bg-zinc-900 aria-[current=page]:after:content-[''] aria-[current=page]:after:absolute aria-[current=page]:after:inset-x-2.5 aria-[current=page]:after:bottom-0 aria-[current=page]:after:border-b-2 aria-[current=page]:after:border-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300"
+                      className="relative inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 aria-[current=page]:text-zinc-100 aria-[current=page]:bg-zinc-900 aria-[current=page]:after:content-[''] aria-[current=page]:after:absolute aria-[current=page]:after:inset-x-2 aria-[current=page]:after:bottom-0 aria-[current=page]:after:border-b-2 aria-[current=page]:after:border-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-300"
                     >
                       <span>{item.label}</span>
                       {typeof item.count === "number" && (
@@ -79,11 +86,10 @@ export function Navbar({ vaultCount, cvCount, apiOnline, settings }: NavbarProps
           </nav>
         </div>
 
-        {/* Right: Discrete System Telemetry Pills (Replaces bulky 3-card status banner) */}
         <div
           role="status"
           aria-live="polite"
-          className="hidden md:flex items-center gap-2 text-[11px] font-mono"
+          className="hidden lg:flex items-center gap-2 text-[11px] font-mono shrink-0"
         >
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-zinc-800 bg-zinc-900/70 text-zinc-300">
             <span

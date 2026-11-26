@@ -104,6 +104,16 @@ backend/
 | `POST` | `/api/ats/evaluate` | Evalua un CV (`cv_variant_id` o `cv_text`) contra los 4 pilares deterministas ATS y una oferta laboral opcional (`job_description`). |
 | `POST` | `/api/ats/evaluate-file` | Audita geometricamente un archivo `PDF`, `DOCX`, `MD` o `TXT` (columnas, tablas, contacto, vinetas XYZ) y calcula el Score ATS 0-100. |
 
+### 3.4 Gestor de Ofertas Laborales y Carpetas Locales (`/api/applications`)
+
+| Metodo | Ruta | Descripcion |
+| :--- | :--- | :--- |
+| `GET` | `/api/applications` | Lista todas las ofertas laborales registradas junto con los archivos fisicos de su carpeta local. |
+| `GET` | `/api/applications/{app_id}` | Obtiene el detalle de una oferta laboral y el contenido de sus archivos Markdown en disco. |
+| `POST` | `/api/applications` | Registra una oferta laboral, recomienda el perfil optimo, compila el CV Harvard adaptado, evalua el Score ATS y crea `storage/applications/YYYY-MM-DD_Empresa_Cargo/`. |
+| `PUT` | `/api/applications/{app_id}` | Actualiza el estado de postulacion, sincroniza cambios en `03_cv_adaptado.md` / `05_carta_presentacion.md` y recalcula el ATS Score. |
+| `DELETE` | `/api/applications/{app_id}` | Elimina la oferta laboral de la base de datos y opcionalmente remueve su carpeta local. |
+
 ---
 
 ## 4. Comandos de Desarrollo Local

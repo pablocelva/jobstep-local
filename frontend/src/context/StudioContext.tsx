@@ -7,6 +7,7 @@ import type {
   BestPracticesData,
   CVVariant,
   CareerProfile,
+  JobApplication,
   LLMSettings,
   ProfileItem,
   TargetDomain,
@@ -19,6 +20,7 @@ interface StudioContextValue {
   careerProfiles: CareerProfile[];
   profileItems: ProfileItem[];
   cvVariants: CVVariant[];
+  applications: JobApplication[];
   selectedCV: CVVariant | null;
   setSelectedCV: React.Dispatch<React.SetStateAction<CVVariant | null>>;
   apiOnline: boolean;
@@ -41,6 +43,7 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
   const [careerProfiles, setCareerProfiles] = useState<CareerProfile[]>([]);
   const [profileItems, setProfileItems] = useState<ProfileItem[]>([]);
   const [cvVariants, setCvVariants] = useState<CVVariant[]>([]);
+  const [applications, setApplications] = useState<JobApplication[]>([]);
   const [selectedCV, setSelectedCV] = useState<CVVariant | null>(null);
   const [apiOnline, setApiOnline] = useState<boolean>(false);
   const [generatingCV, setGeneratingCV] = useState<boolean>(false);
@@ -52,6 +55,7 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
     setCareerProfiles(data.careerProfiles);
     setProfileItems(data.items);
     setCvVariants(data.cvVariants);
+    setApplications(data.applications);
     setApiOnline(data.online);
     if (data.cvVariants.length > 0) {
       setSelectedCV((prev) => prev || data.cvVariants[0]);
@@ -98,6 +102,7 @@ export function StudioProvider({ children }: { children: React.ReactNode }) {
         careerProfiles,
         profileItems,
         cvVariants,
+        applications,
         selectedCV,
         setSelectedCV,
         apiOnline,

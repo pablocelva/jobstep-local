@@ -5,13 +5,14 @@ import { Navbar } from "@/components/layout/Navbar";
 import { StudioProvider, useStudio } from "@/context/StudioContext";
 
 function ShellContent({ children }: { children: React.ReactNode }) {
-  const { apiOnline, settings, profileItems, cvVariants } = useStudio();
+  const { apiOnline, settings, profileItems, cvVariants, applications } = useStudio();
 
   return (
     <div className="min-h-screen flex flex-col bg-[#09090b] text-zinc-100">
       <Navbar
         vaultCount={profileItems.length}
         cvCount={cvVariants.length}
+        appCount={applications.length}
         apiOnline={apiOnline}
         settings={settings}
       />

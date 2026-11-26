@@ -107,5 +107,8 @@ jobstep-local/
     - **30% Match con Oferta Laboral & Recomendación de Perfil Dinámico:** Extracción de *Hard/Soft Skills* de la oferta (vía `LLMService` con respaldo heurístico), listado de keywords encontradas vs. faltantes y recomendación del `CareerProfile` más compatible.
   - Endpoints REST (`backend/app/api/routes_ats.py`): `POST /api/ats/evaluate` y `POST /api/ats/evaluate-file`.
   - Ruta nativa en Next.js (`frontend/src/app/ats-evaluator/page.tsx` + `components/ats/ATSEvaluatorStudio.tsx`): Velocímetro ATS 0-100, barras `<progress>` de los 4 pilares, chips de keywords presentes/faltantes y auditoría viñeta por viñeta.
-- **[Pendiente] Fase 4 - Gestor de Ofertas Laborales y Sincronización en Carpetas Locales (`.md` + CVs).**
+- **[Completado] Fase 4 - Gestor de Ofertas Laborales y Sincronización en Carpetas Locales (`.md` + CVs):**
+  - Servicio `ApplicationFolderManager` (`backend/app/services/applications/folder_manager.py`): Al registrar una oferta laboral, detecta el idioma, extrae keywords de la vacante, recomienda el `CareerProfile` óptimo, compila un CV Harvard adaptado, calcula su ATS Score (0-100) y crea la carpeta física `storage/applications/YYYY-MM-DD_Empresa_Cargo/` con `01_oferta_laboral.md`, `02_evaluacion_ats.md`, `03_cv_adaptado.md`, `05_carta_presentacion.md` y `metadata.json`.
+  - Endpoints REST (`backend/app/api/routes_applications.py`): `GET / POST / PUT / DELETE /api/applications` con sincronización bidireccional DB <-> Disco y re-evaluación automática del ATS Score al editar `03_cv_adaptado.md`.
+  - Ruta nativa en Next.js (`frontend/src/app/applications/page.tsx` + `components/applications/ApplicationsStudio.tsx`): Explorador de carpetas por oferta laboral, selector de estado de postulación, vista de hoja impresa Harvard y editor en vivo sincronizado con el disco local.
 - **[Pendiente] Fase 5 - Copiloto de Reescritura Viñeta por Viñeta y Exportador PDF ATS-Friendly.**

@@ -1,8 +1,10 @@
 import type {
   ATSEvaluationResponse,
+  ApplicationStatus,
   BestPracticesData,
   CVVariant,
   CareerProfile,
+  JobApplication,
   LLMSettings,
   LLMTestResult,
   ProfileColorTheme,
@@ -18,16 +20,19 @@ export async function fetchStudioBootstrap(): Promise<{
   careerProfiles: CareerProfile[];
   items: ProfileItem[];
   cvVariants: CVVariant[];
+  applications: JobApplication[];
   online: boolean;
 }> {
   try {
-    const [settingsRes, guideRes, profilesRes, itemsRes, cvsRes] = await Promise.all([
-      fetch(`${API_BASE}/api/settings/llm`),
-      fetch(`${API_BASE}/api/best-practices`),
-      fetch(`${API_BASE}/api/profile/career-profiles`),
-      fetch(`${API_BASE}/api/profile/items`),
-      fetch(`${API_BASE}/api/profile/cv-variants`),
-    ]);
+    const [settingsRes, guideRes, profilesRes, itemsRes, cvsRes, appsRes] =
+      await Promise.all([
+        fetch(`${API_BASE}/api/settings/llm`),
+        fetch(`${API_BASE}/api/best-practices`),
+        fetch(`${API_BASE}/api/profile/career-profiles`),
+        fetch(`${API_BASE}/api/profile/items`),
+        fetch(`${API_BASE}/api/profile/cv-variants`),
+        fetch(`${API_BASE}/api/applications`),
+      ]);
 
     const settings = settingsRes.ok ? ((await settingsRes.json()) as LLMSettings) : null;
     const guide = guideRes.ok ? ((await guideRes.json()) as BestPracticesData) : null;
@@ -36,6 +41,9 @@ export async function fetchStudioBootstrap(): Promise<{
       : [];
     const items = itemsRes.ok ? ((await itemsRes.json()) as ProfileItem[]) : [];
     const cvVariants = cvsRes.ok ? ((await cvsRes.json()) as CVVariant[]) : [];
+    const applications = appsRes.ok
+      ? ((await appsRes.json()) as JobApplication[])
+      : [];
 
     return {
       settings,
@@ -43,6 +51,7 @@ export async function fetchStudioBootstrap(): Promise<{
       careerProfiles,
       items,
       cvVariants,
+      applications,
       online: settingsRes.ok,
     };
   } catch {
@@ -52,6 +61,7 @@ export async function fetchStudioBootstrap(): Promise<{
       careerProfiles: [],
       items: [],
       cvVariants: [],
+      applications: [],
       online: false,
     };
   }
@@ -247,4 +257,51 @@ export async function evaluateFileATSRequest(
     throw new Error(data.detail || "Error al auditar el archivo PDF/DOCX.");
   }
   return data as ATSEvaluationResponse;
+}
+
+export async function createJobApplicationRequest(payload: {
+  company_name: string;
+  role_title: string;
+  raw_job_description: string;
+  job_url?: string | null;
+  target_profile_slug?: string | null;
+  language?: "auto" | "es" | "en";
+}): Promise<JobApplication> {
+  const res = await fetch(`${API_BASE}/api/applications`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.detail || "No se pudo crear la carpeta de la oferta laboral.");
+  }
+  return data as JobApplication;
+}
+
+export async function updateJobApplicationRequest(
+  appId: number,
+  payload: {
+    status?: ApplicationStatus;
+    adapted_cv_markdown?: string;
+    cover_letter_markdown?: string;
+    re_evaluate_ats?: boolean;
+  }
+): Promise<JobApplication> {
+  const res = await fetch(`${API_BASE}/api/applications/${appId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.detail || "No se pudo actualizar la oferta laboral.");
+  }
+  return data as JobApplication;
+}
+
+export async function deleteJobApplicationRequest(appId: number) {
+  await fetch(`${API_BASE}/api/applications/${appId}?remove_disk_folder=true`, {
+    method: "DELETE",
+  });
 }

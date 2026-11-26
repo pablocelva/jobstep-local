@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.routes_applications import router as applications_router
 from app.api.routes_ats import router as ats_router
 from app.api.routes_profile import router as profile_router
 from app.api.routes_settings import router as settings_router
@@ -41,3 +42,4 @@ app.add_middleware(
 app.include_router(settings_router)
 app.include_router(profile_router)
 app.include_router(ats_router)
+app.include_router(applications_router)
